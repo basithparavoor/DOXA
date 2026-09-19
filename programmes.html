@@ -49,7 +49,11 @@
                 <a href="settings.html" class="nav-item">
                     <i data-lucide="settings"></i> Settings
                 </a>
-            </nav>
+            <div style="flex-grow: 1;"></div>
+<a href="#" class="nav-item" id="logoutBtn" style="color: var(--danger); margin-top: auto;">
+    <i data-lucide="log-out"></i> Logout
+</a>
+</nav>
         </aside>
 
         <!-- Main Content -->
@@ -105,7 +109,7 @@
         </main>
     </div>
 
-    <!-- Create/Edit Modal -->
+   <!-- Create/Edit Modal -->
     <div class="modal-overlay" id="programmeModal">
         <div class="modal-card">
             <div class="modal-header">
@@ -114,6 +118,7 @@
             </div>
             <div class="modal-body">
                 <form id="programmeForm">
+                    <input type="hidden" id="editProgId">
                     <div class="form-group">
                         <label>Programme Name</label>
                         <input type="text" id="progName" class="form-control" required placeholder="e.g. SSF Sahityotsav 2026">
@@ -145,6 +150,25 @@
         </div>
     </div>
 
+    <!-- Assign Form Modal -->
+    <div class="modal-overlay" id="assignModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Assign Form to Programme</h2>
+                <button class="modal-close" id="closeAssignModalBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assignProgId">
+                <div class="form-group">
+                    <label>Select Existing Form</label>
+                    <select id="assignFormSelect" class="form-control"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="saveAssignBtn" style="width: 100%; justify-content: center;">Assign Form</button>
+            </div>
+        </div>
+    </div>
     <script type="module">
         import { supabase } from './config.js';
         import { ProgrammesAPI } from './programmes.js';
@@ -154,11 +178,17 @@
 
             const tbody = document.getElementById('programmesTableBody');
             const modal = document.getElementById('programmeModal');
+            const assignModal = document.getElementById('assignModal');
+            let allForms = [];
             
             // Load Data
             async function loadProgrammes() {
                 try {
+                    // Fetch both programmes and available forms
                     const programmes = await ProgrammesAPI.getAll();
+                    const { data: formsData } = await supabase.from('forms').select('id, title');
+                    allForms = formsData || [];
+
                     tbody.innerHTML = '';
                     
                     if(programmes.length === 0) {
@@ -168,7 +198,7 @@
 
                     programmes.forEach(prog => {
                         const statusClass = prog.status === 'ACTIVE' ? 'badge-success' : 'badge-warning';
-                        const formsCount = prog.forms[0]?.count || 0;
+                        const formsCount = prog.forms && prog.forms[0] ? prog.forms[0].count : 0;
                         
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
@@ -176,32 +206,76 @@
                                 <strong>${prog.name}</strong><br>
                                 <span style="color: var(--text-muted); font-size: 0.75rem;">${prog.short_code}</span>
                             </td>
-                            <td><span class="badge ${statusClass}">${prog.status}</span></td>
+                            <td><span class="badge ${statusClass}">${prog.status || 'DRAFT'}</span></td>
                             <td>${formsCount} Form(s)</td>
                             <td>
                                 ${prog.start_date ? new Date(prog.start_date).toLocaleDateString() : '-'} to<br>
                                 ${prog.end_date ? new Date(prog.end_date).toLocaleDateString() : '-'}
                             </td>
                             <td>
-                                <button class="btn btn-outline" onclick="window.location.href='programme.html?id=${prog.id}'" style="padding: 4px 8px; font-size: 0.75rem;">Manage</button>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn btn-outline edit-prog-btn" data-id="${prog.id}" data-name="${prog.name}" data-code="${prog.short_code}" data-desc="${prog.description || ''}" data-start="${prog.start_date || ''}" data-end="${prog.end_date || ''}" style="padding: 4px 8px;" title="Edit Programme"><i data-lucide="edit-2" style="width: 14px;"></i></button>
+                                    <button class="btn btn-outline assign-btn" data-id="${prog.id}" style="padding: 4px 8px;" title="Assign Form"><i data-lucide="link" style="width: 14px;"></i></button>
+                                    <button class="btn btn-outline del-prog-btn" data-id="${prog.id}" style="padding: 4px 8px; color: var(--danger); border-color: var(--danger);" title="Delete Programme"><i data-lucide="trash-2" style="width: 14px;"></i></button>
+                                </div>
                             </td>
                         `;
                         tbody.appendChild(tr);
                     });
+
+                    lucide.createIcons();
+                    bindActionEvents();
                 } catch (error) {
                     console.error(error);
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Failed to load programmes.</td></tr>';
                 }
             }
 
+            function bindActionEvents() {
+                // Edit Programme
+                document.querySelectorAll('.edit-prog-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                    const btnEl = e.currentTarget;
+                    document.getElementById('editProgId').value = btnEl.dataset.id;
+                    document.getElementById('progName').value = btnEl.dataset.name;
+                    document.getElementById('progCode').value = btnEl.dataset.code;
+                    document.getElementById('progDesc').value = btnEl.dataset.desc;
+                    document.getElementById('progStart').value = btnEl.dataset.start;
+                    document.getElementById('progEnd').value = btnEl.dataset.end;
+                    
+                    document.getElementById('modalTitle').textContent = 'Edit Programme';
+                    modal.classList.add('active');
+                }));
+
+                // Delete Programme
+                document.querySelectorAll('.del-prog-btn').forEach(btn => btn.addEventListener('click', async (e) => {
+                    if(!confirm('Delete this programme? Assigned forms will lose their association.')) return;
+                    try {
+                        const { error } = await supabase.from('programmes').delete().eq('id', e.currentTarget.dataset.id);
+                        if (error) throw error;
+                        await loadProgrammes();
+                    } catch (err) { alert('Failed to delete programme: ' + err.message); }
+                }));
+
+                // Open Assign Form Modal
+                document.querySelectorAll('.assign-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                    document.getElementById('assignProgId').value = e.currentTarget.dataset.id;
+                    const select = document.getElementById('assignFormSelect');
+                    select.innerHTML = '<option value="">Select a form...</option>';
+                    allForms.forEach(f => select.innerHTML += `<option value="${f.id}">${f.title}</option>`);
+                    assignModal.classList.add('active');
+                }));
+            }
+
             loadProgrammes();
 
-            // Modal Logic
-            const openModal = () => modal.classList.add('active');
-            const closeModal = () => {
-                modal.classList.remove('active');
+            // Programme Modal Actions
+            const openModal = () => {
+                document.getElementById('editProgId').value = '';
                 document.getElementById('programmeForm').reset();
+                document.getElementById('modalTitle').textContent = 'Create Programme';
+                modal.classList.add('active');
             };
+            const closeModal = () => modal.classList.remove('active');
 
             document.getElementById('openCreateModalBtn').addEventListener('click', openModal);
             document.getElementById('closeModalBtn').addEventListener('click', closeModal);
@@ -212,16 +286,23 @@
                 btn.disabled = true;
                 btn.textContent = 'Saving...';
 
+                const id = document.getElementById('editProgId').value;
+                const payload = {
+                    name: document.getElementById('progName').value,
+                    short_code: document.getElementById('progCode').value,
+                    description: document.getElementById('progDesc').value,
+                    start_date: document.getElementById('progStart').value || null,
+                    end_date: document.getElementById('progEnd').value || null,
+                    status: 'ACTIVE' // Automatically set to active for simplicity
+                };
+
                 try {
-                    await ProgrammesAPI.create({
-                        name: document.getElementById('progName').value,
-                        short_code: document.getElementById('progCode').value,
-                        description: document.getElementById('progDesc').value,
-                        start_date: document.getElementById('progStart').value || null,
-                        end_date: document.getElementById('progEnd').value || null,
-                        status: 'DRAFT'
-                    });
-                    
+                    if (id) {
+                        const { error } = await supabase.from('programmes').update(payload).eq('id', id);
+                        if (error) throw error;
+                    } else {
+                        await ProgrammesAPI.create(payload);
+                    }
                     closeModal();
                     await loadProgrammes();
                 } catch (error) {
@@ -231,28 +312,56 @@
                     btn.textContent = 'Save Programme';
                 }
             });
+
+            // Assign Modal Actions
+            document.getElementById('closeAssignModalBtn').addEventListener('click', () => assignModal.classList.remove('active'));
+            document.getElementById('saveAssignBtn').addEventListener('click', async () => {
+                const progId = document.getElementById('assignProgId').value;
+                const formId = document.getElementById('assignFormSelect').value;
+                if(!formId) return alert('Select a form to assign.');
+                
+                const btn = document.getElementById('saveAssignBtn');
+                btn.textContent = 'Assigning...';
+                btn.disabled = true;
+
+                try {
+                    const { error } = await supabase.from('forms').update({ programme_id: progId }).eq('id', formId);
+                    if (error) throw error;
+                    assignModal.classList.remove('active');
+                    await loadProgrammes();
+                } catch (err) {
+                    alert('Failed to assign form: ' + err.message);
+                } finally {
+                    btn.textContent = 'Assign Form';
+                    btn.disabled = false;
+                }
+            });
         });
 
-// Mobile Sidebar Toggle Logic
-const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-const sidebar = document.querySelector('.sidebar');
+        // Mobile Sidebar Toggle Logic
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.querySelector('.sidebar');
 
-if (mobileMenuBtn && sidebar) {
-    mobileMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sidebar.classList.toggle('active');
-    });
+        if (mobileMenuBtn && sidebar) {
+            mobileMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sidebar.classList.toggle('active');
+            });
 
-    // Close sidebar when tapping outside of it on mobile screens
-    document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
-            if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
+                    if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                        sidebar.classList.remove('active');
+                    }
+                }
+            });
         }
-    });
-}
 
+        document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await supabase.auth.signOut();
+            window.location.href = 'index.html';
+        });
     </script>
 </body>
 </html>

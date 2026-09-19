@@ -37,7 +37,11 @@
                 <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
                 <a href="staff.html" class="nav-item active"><i data-lucide="users"></i> Staff</a>
                 <a href="settings.html" class="nav-item"><i data-lucide="settings"></i> Settings</a>
-            </nav>
+            <div style="flex-grow: 1;"></div>
+<a href="#" class="nav-item" id="logoutBtn" style="color: var(--danger); margin-top: auto;">
+    <i data-lucide="log-out"></i> Logout
+</a>
+</nav>
         </aside>
 
         <!-- Main Content -->
@@ -95,6 +99,7 @@
                     <label>Email Address</label>
                     <input type="email" id="inviteEmail" class="form-control" placeholder="jane@organization.org" required>
                 </div>
+                
                 <div class="form-group" style="margin-top: 16px;">
                     <label>Platform Role</label>
                     <select id="inviteRole" class="form-control">
@@ -142,9 +147,27 @@
         import { supabase } from './config.js';
 
         document.addEventListener('DOMContentLoaded', async () => {
+    lucide.createIcons();
+    
+    // --- SECURITY CHECK: VERIFY SUPER_ADMIN ---
+    const { data: authData } = await supabase.auth.getUser();
+    if (authData.user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', authData.user.id).single();
+        if (profile.role !== 'SUPER_ADMIN') {
+            document.querySelector('.page-content').innerHTML = `
+                <div style="padding: 60px 20px; text-align: center; color: var(--danger);">
+                    <i data-lucide="shield-alert" style="width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.8;"></i>
+                    <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 8px;">Access Denied</h2>
+                    <p style="color: var(--text-muted);">Only Super Admins have permission to view and manage staff accounts.</p>
+                </div>`;
             lucide.createIcons();
-            
-            const tbody = document.getElementById('staffTableBody');
+            return; // Halt execution of the rest of the page script
+        }
+    }
+    // --- END SECURITY CHECK ---
+
+    const tbody = document.getElementById('staffTableBody');
+    // ... rest of your existing staff code ...
             const searchInput = document.getElementById('searchInput');
             let staffList = [];
             let activeUserId = null;
@@ -330,6 +353,13 @@ if (mobileMenuBtn && sidebar) {
         }
     });
 }
+
+document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await supabase.auth.signOut();
+    window.location.href = 'index.html'; // Redirect to your login page
+});
+
 
     </script>
 </body>

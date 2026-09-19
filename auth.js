@@ -4,7 +4,7 @@ import { supabase } from './config.js';
 document.addEventListener('DOMContentLoaded', async () => {
     // Check if already logged in
     const { data: { session } } = await supabase.auth.getSession();
-    if (session && window.location.pathname.includes('login.html')) {
+    if (session && window.location.pathname.includes('index.html')) {
         window.location.href = '/dashboard.html';
     }
 
@@ -46,5 +46,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 export async function logout() {
     await supabase.auth.signOut();
-    window.location.href = '/login.html';
+    window.location.href = '/index.html';
 }

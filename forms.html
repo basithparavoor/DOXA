@@ -48,7 +48,11 @@
                 <a href="settings.html" class="nav-item">
                     <i data-lucide="settings"></i> Settings
                 </a>
-            </nav>
+            <div style="flex-grow: 1;"></div>
+<a href="#" class="nav-item" id="logoutBtn" style="color: var(--danger); margin-top: auto;">
+    <i data-lucide="log-out"></i> Logout
+</a>
+</nav>
         </aside>
 
         <!-- Main Content -->
@@ -165,12 +169,15 @@
                             <td>${programmeName}</td>
                             <td><span class="badge ${statusClass}">${form.status}</span></td>
                             <td>${new Date(form.created_at).toLocaleDateString()}</td>
-                            <td>
-                                <div style="display: flex; gap: 8px;">
-                                    <button class="btn btn-outline" onclick="window.location.href='builder.html?id=${form.id}'" style="padding: 4px 8px; font-size: 0.75rem;" title="Edit Form"><i data-lucide="edit-2" style="width: 14px;"></i></button>
-                                    <button class="btn btn-outline access-btn" data-id="${form.id}" data-title="${form.title}" style="padding: 4px 8px; font-size: 0.75rem;" title="Manage Access"><i data-lucide="shield" style="width: 14px;"></i></button>
-                                </div>
-                            </td>
+<td>
+    <div style="display: flex; gap: 8px;">
+        <button class="btn btn-outline copy-link-btn" data-slug="${form.slug}" style="padding: 4px 8px; font-size: 0.75rem;" title="Copy Public Link"><i data-lucide="link" style="width: 14px;"></i></button>
+        <button class="btn btn-outline duplicate-btn" data-id="${form.id}" style="padding: 4px 8px; font-size: 0.75rem;" title="Duplicate Form"><i data-lucide="copy" style="width: 14px;"></i></button>
+        <button class="btn btn-outline" onclick="window.location.href='builder.html?id=${form.id}'" style="padding: 4px 8px; font-size: 0.75rem;" title="Edit Form"><i data-lucide="edit-2" style="width: 14px;"></i></button>
+        <button class="btn btn-outline access-btn" data-id="${form.id}" data-title="${form.title}" style="padding: 4px 8px; font-size: 0.75rem;" title="Manage Access"><i data-lucide="shield" style="width: 14px;"></i></button>
+        <button class="btn btn-outline delete-form-btn" data-id="${form.id}" style="padding: 4px 8px; font-size: 0.75rem; color: var(--danger); border-color: var(--danger);" title="Delete Form"><i data-lucide="trash-2" style="width: 14px;"></i></button>
+    </div>
+</td>
                         `;
                         tbody.appendChild(tr);
                     });
@@ -182,6 +189,77 @@
                             openAccessModal(btnEl.dataset.id, btnEl.dataset.title);
                         });
                     });
+
+                    // Handle Copy Link
+document.querySelectorAll('.copy-link-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const slug = e.currentTarget.closest('button').dataset.slug;
+        const url = `${window.location.origin}/public-form.html?slug=${slug}`;
+        navigator.clipboard.writeText(url).then(() => {
+            const icon = e.currentTarget.querySelector('i');
+            icon.setAttribute('data-lucide', 'check');
+            icon.style.color = 'var(--success)';
+            lucide.createIcons();
+            setTimeout(() => { 
+                icon.setAttribute('data-lucide', 'link'); 
+                icon.style.color = ''; 
+                lucide.createIcons(); 
+            }, 2000);
+        });
+    });
+});
+
+// Handle Duplicate Form (Upgraded for perfect copy)
+document.querySelectorAll('.duplicate-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+        const formId = e.currentTarget.closest('button').dataset.id;
+        e.currentTarget.innerHTML = '<i data-lucide="loader" style="animation: spin 1s linear infinite; width:14px;"></i>';
+        
+        try {
+            // Fetch the exact, complete form directly from DB to ensure theme is included
+            const { data: fullForm, error: fetchError } = await supabase.from('forms').select('*').eq('id', formId).single();
+            if (fetchError) throw fetchError;
+
+            const newTitle = `${fullForm.title} (Copy)`;
+            const newSlug = `${fullForm.slug}-copy-${Math.floor(Math.random() * 10000)}`;
+            
+            // Deep copy the schema to disconnect it from the original
+            let newSchema = JSON.parse(JSON.stringify(fullForm.schema));
+            newSchema.title = newTitle;
+
+            const { error: insertError } = await supabase.from('forms').insert([{
+                title: newTitle,
+                slug: newSlug,
+                description: fullForm.description,
+                programme_id: fullForm.programme_id,
+                schema: newSchema,
+                status: 'DRAFT' // Copies always start as drafts
+            }]);
+            
+            if (insertError) throw insertError;
+            await loadForms(); 
+        } catch (error) {
+            alert('Failed to duplicate form: ' + error.message);
+            await loadForms();
+        }
+    });
+});
+
+// Handle Delete Form
+document.querySelectorAll('.delete-form-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+        if(!confirm("Are you sure you want to permanently delete this form? This will also delete all associated responses.")) return;
+        const formId = e.currentTarget.closest('button').dataset.id;
+        
+        try {
+            const { error } = await supabase.from('forms').delete().eq('id', formId);
+            if (error) throw error;
+            await loadForms();
+        } catch (error) {
+            alert('Failed to delete form: ' + error.message);
+        }
+    });
+});
 
                     lucide.createIcons();
                 } catch (error) {
@@ -273,18 +351,21 @@
 
             loadForms();
         });
-
-        async function grantFormAccess(formId, userId, role = 'VIEWER') {
-    // Attempt to insert the permission explicitly. 
-    // Super Admins automatically see everything due to the RLS policy.
-    const { error } = await supabase.from('form_permissions').insert([{
+async function grantFormAccess(formId, userId, role = 'VIEWER') {
+    // Upsert replaces the record if it already exists instead of throwing an error
+    const { error } = await supabase.from('form_permissions').upsert({
         form_id: formId,
         user_id: userId,
-        access_level: role // 'VIEWER' or 'EDITOR'
-    }]);
+        role: role
+    }, { 
+        onConflict: 'form_id, user_id' 
+    });
     
-    if (error) alert('Failed to update permissions: ' + error.message);
-    else alert('Permissions updated successfully.');
+    if (error) {
+        alert('Failed to update permissions: ' + error.message);
+    } else {
+        // Success
+    }
 }
 
 // Mobile Sidebar Toggle Logic
@@ -306,6 +387,13 @@ if (mobileMenuBtn && sidebar) {
         }
     });
 }
+
+
+document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await supabase.auth.signOut();
+    window.location.href = 'index.html'; // Redirect to your login page
+});
 
     </script>
 </body>
