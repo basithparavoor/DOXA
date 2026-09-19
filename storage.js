@@ -1,5 +1,5 @@
 // storage.js
-import { supabase } from 'config.js';
+import { supabase } from '/config.js';
 
 export const StorageAPI = {
     async uploadFile(file, programmeId, registrationId) {

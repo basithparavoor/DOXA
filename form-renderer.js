@@ -1,6 +1,6 @@
 // form-renderer.js
 import { supabase } from '../config.js';
-import { StorageAPI } from '../api/storage.js'; 
+import { StorageAPI } from '../storage.js'; 
 
 export class FormRenderer {
     constructor(containerId, formSlug) {
