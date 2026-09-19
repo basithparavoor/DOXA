@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics | DOXA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="variables.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="analytics.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar-overlay" id="mobileSidebarOverlay"></div>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <!-- Replaced Lucide icon with default logo.png -->
+                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
+                <span>DOXA ADMIN</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="programmes.html" class="nav-item">
+                    <i data-lucide="folder-kanban"></i> Programmes
+                </a>
+                <a href="forms.html" class="nav-item">
+                    <i data-lucide="file-text"></i> Forms
+                </a>
+                <a href="responses.html" class="nav-item">
+                    <i data-lucide="inbox"></i> Responses
+                </a>
+                <a href="files.html" class="nav-item">
+                    <i data-lucide="folder-open"></i> File Manager
+                </a>
+                <a href="analytics.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i> Analytics
+                </a>
+                
+                <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
+                
+                <a href="staff.html" class="nav-item">
+                    <i data-lucide="users"></i> Staff
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i data-lucide="settings"></i> Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <!-- NEW: Hamburger Button -->
+                <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="search-bar">
+                    <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
+                    <input type="text" placeholder="Search analytics...">
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="window.print()" title="Print Report"><i data-lucide="printer"></i></button>
+                    <div class="user-profile">
+                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1>Global Analytics</h1>
+                        <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 4px;">Platform-wide submission and performance metrics.</p>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header"><span>Total Submissions</span><i data-lucide="users" style="color: var(--primary)"></i></div>
+                        <div class="stat-value" id="kpiTotal">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><span>Active Published Forms</span><i data-lucide="file-check-2" style="color: var(--success)"></i></div>
+                        <div class="stat-value" id="kpiForms">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><span>Approval Rate</span><i data-lucide="check-circle" style="color: var(--warning)"></i></div>
+                        <div class="stat-value" id="kpiApproval">-</div>
+                    </div>
+                </div>
+
+                <!-- Charts Area -->
+                <div class="charts-grid">
+                    <!-- Trend Chart -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <span class="chart-title">Submissions (Last 7 Days)</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Status Distribution Chart -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <span class="chart-title">Response Status Distribution</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { AnalyticsAPI } from './analytics.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+
+            try {
+                // 1. Fetch Data
+                const stats = await AnalyticsAPI.getGlobalStats();
+
+                // 2. Populate KPIs
+                document.getElementById('kpiTotal').textContent = stats.totalSubmissions;
+                document.getElementById('kpiForms').textContent = stats.activeForms;
+                
+                const totalProcessed = stats.statusCounts.APPROVED + stats.statusCounts.REJECTED;
+                let approvalRate = 0;
+                if (totalProcessed > 0) {
+                    approvalRate = Math.round((stats.statusCounts.APPROVED / totalProcessed) * 100);
+                }
+                document.getElementById('kpiApproval').textContent = `${approvalRate}%`;
+
+                // 3. Configure common Chart.js defaults to match our premium UI
+                Chart.defaults.font.family = "'Inter', sans-serif";
+                Chart.defaults.color = '#64748B'; // var(--text-muted)
+
+                // 4. Render Trend Line Chart
+                const trendCtx = document.getElementById('trendChart').getContext('2d');
+                new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: Object.keys(stats.trendData),
+                        datasets: [{
+                            label: 'Daily Submissions',
+                            data: Object.values(stats.trendData),
+                            borderColor: '#4F46E5', // primary
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3, // smooth curves
+                            fill: true,
+                            pointBackgroundColor: '#4F46E5'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#E2E8F0' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // 5. Render Status Doughnut Chart
+                const statusCtx = document.getElementById('statusChart').getContext('2d');
+                new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Submitted', 'Under Review', 'Approved', 'Rejected', 'Completed'],
+                        datasets: [{
+                            data: [
+                                stats.statusCounts.SUBMITTED,
+                                stats.statusCounts.UNDER_REVIEW,
+                                stats.statusCounts.APPROVED,
+                                stats.statusCounts.REJECTED,
+                                stats.statusCounts.COMPLETED
+                            ],
+                            backgroundColor: [
+                                '#94A3B8', // Submitted (Gray)
+                                '#F59E0B', // Under Review (Warning/Orange)
+                                '#10B981', // Approved (Success/Green)
+                                '#EF4444', // Rejected (Danger/Red)
+                                '#3B82F6'  // Completed (Blue)
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { position: 'right' }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Analytics Error:", error);
+                alert("Failed to load analytics data.");
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager | DOXA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="variables.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="components.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar-overlay" id="mobileSidebarOverlay"></div>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <!-- Replaced Lucide icon with default logo.png -->
+                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
+                <span>DOXA ADMIN</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="programmes.html" class="nav-item">
+                    <i data-lucide="folder-kanban"></i> Programmes
+                </a>
+                <a href="forms.html" class="nav-item">
+                    <i data-lucide="file-text"></i> Forms
+                </a>
+                <a href="responses.html" class="nav-item">
+                    <i data-lucide="inbox"></i> Responses
+                </a>
+                <a href="files.html" class="nav-item">
+                    <i data-lucide="folder-open"></i> File Manager
+                </a>
+                <a href="analytics.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i> Analytics
+                </a>
+                
+                <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
+                
+                <a href="staff.html" class="nav-item">
+                    <i data-lucide="users"></i> Staff
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i data-lucide="settings"></i> Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <!-- NEW: Hamburger Button -->
+                <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="search-bar">
+                    <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
+                    <input type="text" placeholder="Search files...">
+                </div>
+                <div class="header-actions">
+                    <div class="user-profile">
+                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1>Document Management</h1>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="filesTable">
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Size</th>
+                                <th>Uploaded</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="filesTableBody">
+                            <tr><td colspan="4" style="text-align: center;">Loading files...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { StorageAPI } from './storage.js';
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            const tbody = document.getElementById('filesTableBody');
+
+            async function loadFiles() {
+                try {
+                    const files = await StorageAPI.listFiles();
+                    tbody.innerHTML = '';
+                    
+                    if(files.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No documents uploaded yet.</td></tr>';
+                        return;
+                    }
+
+                    // Format bytes
+                    const formatBytes = (bytes) => {
+                        if (bytes === 0) return '0 Bytes';
+                        const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'], i = Math.floor(Math.log(bytes) / Math.log(k));
+                        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                    };
+
+                    files.forEach(file => {
+                        // Skip folder placeholders (.emptyFolderPlaceholder) created by Supabase
+                        if(file.name === '.emptyFolderPlaceholder') return;
+
+                        const dateStr = new Date(file.created_at).toLocaleString();
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i data-lucide="file" style="color: var(--primary); width: 16px;"></i>
+                                    <strong>${file.name.split('/').pop()}</strong>
+                                </div>
+                            </td>
+                            <td>${formatBytes(file.metadata.size)}</td>
+                            <td>${dateStr}</td>
+                            <td>
+                                <button class="btn btn-outline download-btn" data-path="${file.name}" style="padding: 4px 8px; font-size: 0.75rem;">
+                                    <i data-lucide="download"></i> Download
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    // Attach secure download handler
+                    document.querySelectorAll('.download-btn').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const path = e.target.closest('button').dataset.path;
+                            try {
+                                const signedUrl = await StorageAPI.getSignedUrl(path);
+                                window.open(signedUrl, '_blank');
+                            } catch (error) {
+                                alert("Unable to securely retrieve file: " + error.message);
+                            }
+                        });
+                    });
+
+                    lucide.createIcons();
+                } catch (error) {
+                    console.error(error);
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--danger);">Failed to load files.</td></tr>';
+                }
+            }
+
+            loadFiles();
+        });
+    </script>
+</body>
+</html>

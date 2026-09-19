@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forms | DOXA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="variables.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="components.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar-overlay" id="mobileSidebarOverlay"></div>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <!-- Replaced Lucide icon with default logo.png -->
+                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
+                <span>DOXA ADMIN</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="programmes.html" class="nav-item">
+                    <i data-lucide="folder-kanban"></i> Programmes
+                </a>
+                <a href="forms.html" class="nav-item">
+                    <i data-lucide="file-text"></i> Forms
+                </a>
+                <a href="responses.html" class="nav-item">
+                    <i data-lucide="inbox"></i> Responses
+                </a>
+                <a href="files.html" class="nav-item">
+                    <i data-lucide="folder-open"></i> File Manager
+                </a>
+                <a href="analytics.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i> Analytics
+                </a>
+                
+                <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
+                
+                <a href="staff.html" class="nav-item">
+                    <i data-lucide="users"></i> Staff
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i data-lucide="settings"></i> Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <!-- NEW: Hamburger Button -->
+                <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="search-bar">
+                    <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
+                    <input type="text" placeholder="Search forms...">
+                </div>
+                <div class="header-actions">
+                    <div class="user-profile">
+                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1>Forms</h1>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="window.location.href='builder.html'">
+                            <i data-lucide="plus"></i> New Form
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="formsTable">
+                        <thead>
+                            <tr>
+                                <th>Form Title</th>
+                                <th>Programme</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="formsTableBody">
+                            <tr><td colspan="5" style="text-align: center;">Loading forms...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Manage Access Modal -->
+    <div class="modal-overlay" id="accessModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="accessModalTitle">Manage Form Access</h2>
+                <button class="modal-close" id="closeAccessModalBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="background: var(--bg-surface-hover); padding: 16px; border-radius: var(--radius-md); margin-bottom: 24px;">
+                    <h3 style="font-size: 0.875rem; margin-bottom: 12px;">Grant Access</h3>
+                    <div style="display: flex; gap: 12px;">
+                        <select id="userSelect" class="form-control" style="flex: 2;">
+                            <option value="">Select Staff Member...</option>
+                        </select>
+                        <select id="roleSelect" class="form-control" style="flex: 1;">
+                            <option value="VIEWER">Data Viewer</option>
+                            <option value="EDITOR">Form Editor</option>
+                        </select>
+                        <button class="btn btn-primary" id="grantAccessBtn">Add</button>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 0.875rem; margin-bottom: 12px; color: var(--text-muted);">Current Access</h3>
+                <div id="currentAccessList">
+                    <div style="text-align: center; color: var(--text-muted); padding: 20px;">Loading permissions...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { FormsAPI } from './forms.js';
+        import { PermissionsAPI } from './permissions.js';
+        import { supabase } from './config.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            const tbody = document.getElementById('formsTableBody');
+            let activeFormIdForAccess = null;
+
+            // Load Forms
+            async function loadForms() {
+                try {
+                    const forms = await FormsAPI.getAll();
+                    tbody.innerHTML = '';
+                    
+                    if(forms.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No forms found. Create one to get started.</td></tr>';
+                        return;
+                    }
+
+                    forms.forEach(form => {
+                        const statusClass = form.status === 'PUBLISHED' ? 'badge-success' : 'badge-warning';
+                        const programmeName = form.programmes?.name || 'No Programme';
+                        
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>
+                                <strong>${form.title}</strong><br>
+                                <a href="public-form.html?slug=${form.slug}" target="_blank" style="color: var(--primary); font-size: 0.75rem; text-decoration: none;">/${form.slug}</a>
+                            </td>
+                            <td>${programmeName}</td>
+                            <td><span class="badge ${statusClass}">${form.status}</span></td>
+                            <td>${new Date(form.created_at).toLocaleDateString()}</td>
+                            <td>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn btn-outline" onclick="window.location.href='builder.html?id=${form.id}'" style="padding: 4px 8px; font-size: 0.75rem;" title="Edit Form"><i data-lucide="edit-2" style="width: 14px;"></i></button>
+                                    <button class="btn btn-outline access-btn" data-id="${form.id}" data-title="${form.title}" style="padding: 4px 8px; font-size: 0.75rem;" title="Manage Access"><i data-lucide="shield" style="width: 14px;"></i></button>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    // Attach access modal events
+                    document.querySelectorAll('.access-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const btnEl = e.target.closest('button');
+                            openAccessModal(btnEl.dataset.id, btnEl.dataset.title);
+                        });
+                    });
+
+                    lucide.createIcons();
+                } catch (error) {
+                    console.error(error);
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Failed to load forms.</td></tr>';
+                }
+            }
+
+            // Access Modal Logic
+            async function openAccessModal(formId, formTitle) {
+                activeFormIdForAccess = formId;
+                document.getElementById('accessModalTitle').textContent = `Access: ${formTitle}`;
+                document.getElementById('accessModal').classList.add('active');
+                
+                await refreshAccessList();
+                await loadStaffDropdown();
+            }
+
+            document.getElementById('closeAccessModalBtn').addEventListener('click', () => {
+                document.getElementById('accessModal').classList.remove('active');
+            });
+
+            async function refreshAccessList() {
+                const listEl = document.getElementById('currentAccessList');
+                try {
+                    const permissions = await PermissionsAPI.getFormAccess(activeFormIdForAccess);
+                    listEl.innerHTML = '';
+                    
+                    if(permissions.length === 0) {
+                        listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.875rem;">Only Admins and the Form Creator currently have access.</p>';
+                        return;
+                    }
+
+                    permissions.forEach(perm => {
+                        const badgeColor = perm.role === 'EDITOR' ? 'badge-warning' : 'badge-success';
+                        listEl.innerHTML += `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-light);">
+                                <div>
+                                    <div style="font-weight: 500;">${perm.profiles.full_name}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">${perm.profiles.email}</div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span class="badge ${badgeColor}">${perm.role}</span>
+                                    <button class="icon-btn remove-access-btn" data-id="${perm.id}" style="color: var(--danger);">
+                                        <i data-lucide="trash-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    document.querySelectorAll('.remove-access-btn').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            if(!confirm("Remove access for this user?")) return;
+                            const permId = e.target.closest('button').dataset.id;
+                            await PermissionsAPI.revokeAccess(permId);
+                            await refreshAccessList();
+                        });
+                    });
+
+                    lucide.createIcons();
+                } catch (error) {
+                    listEl.innerHTML = `<p style="color: var(--danger);">Failed to load permissions.</p>`;
+                }
+            }
+
+            async function loadStaffDropdown() {
+                const { data: staff } = await supabase.from('profiles').select('id, full_name').neq('role', 'SUPER_ADMIN');
+                const selectEl = document.getElementById('userSelect');
+                selectEl.innerHTML = '<option value="">Select Staff Member...</option>';
+                staff.forEach(user => {
+                    selectEl.innerHTML += `<option value="${user.id}">${user.full_name}</option>`;
+                });
+            }
+
+            document.getElementById('grantAccessBtn').addEventListener('click', async () => {
+                const userId = document.getElementById('userSelect').value;
+                const role = document.getElementById('roleSelect').value;
+                
+                if(!userId) return alert("Please select a user");
+
+                try {
+                    await PermissionsAPI.grantAccess(activeFormIdForAccess, userId, role);
+                    await refreshAccessList();
+                } catch (error) {
+                    alert("Error granting access: " + error.message);
+                }
+            });
+
+            loadForms();
+        });
+    </script>
+</body>
+</html>

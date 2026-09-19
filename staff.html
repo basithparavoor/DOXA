@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Management | DOXA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="variables.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="components.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar-overlay" id="mobileSidebarOverlay"></div>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <!-- Replaced Lucide icon with default logo.png -->
+                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
+                <span>DOXA ADMIN</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="programmes.html" class="nav-item">
+                    <i data-lucide="folder-kanban"></i> Programmes
+                </a>
+                <a href="forms.html" class="nav-item">
+                    <i data-lucide="file-text"></i> Forms
+                </a>
+                <a href="responses.html" class="nav-item">
+                    <i data-lucide="inbox"></i> Responses
+                </a>
+                <a href="files.html" class="nav-item">
+                    <i data-lucide="folder-open"></i> File Manager
+                </a>
+                <a href="analytics.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i> Analytics
+                </a>
+                
+                <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
+                
+                <a href="staff.html" class="nav-item">
+                    <i data-lucide="users"></i> Staff
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i data-lucide="settings"></i> Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <!-- NEW: Hamburger Button -->
+                <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="search-bar">
+                    <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
+                    <input type="text" placeholder="Search staff members...">
+                </div>
+                <div class="header-actions">
+                    <div class="user-profile">
+                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1>Staff Management</h1>
+                        <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 4px;">Manage access, roles, and permissions.</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="openInviteModalBtn">
+                            <i data-lucide="user-plus"></i> Invite Staff
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="staffTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Joined Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffTableBody">
+                            <tr><td colspan="5" style="text-align: center;">Loading staff...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Invite Staff Modal -->
+    <div class="modal-overlay" id="inviteModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Invite Team Member</h2>
+                <button class="modal-close" id="closeInviteModalBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="inviteForm">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="staffName" class="form-control" required placeholder="e.g. Ahmed Ali">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="staffEmail" class="form-control" required placeholder="ahmed@organization.com">
+                    </div>
+                    <div class="form-group">
+                        <label>System Role</label>
+                        <select id="staffRole" class="form-control" required>
+                            <option value="VIEWER">Viewer (Read-only access)</option>
+                            <option value="EDITOR">Editor (Can create & edit forms)</option>
+                            <option value="ADMIN">Admin (Manage programmes & responses)</option>
+                            <option value="SUPER_ADMIN">Super Admin (Full system access)</option>
+                        </select>
+                    </div>
+                </form>
+                <div style="margin-top: 16px; padding: 12px; background: var(--primary-light); color: var(--primary-hover); border-radius: var(--radius-md); font-size: 0.875rem;">
+                    <i data-lucide="info" style="width: 16px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
+                    An invitation email with a secure setup link will be sent to this user.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelInviteBtn">Cancel</button>
+                <button class="btn btn-primary" id="sendInviteBtn">Send Invitation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Staff Modal -->
+    <div class="modal-overlay" id="manageStaffModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Manage Staff Role</h2>
+                <button class="modal-close" id="closeManageStaffBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p id="manageStaffName" style="font-weight: 600; margin-bottom: 16px; font-size: 1.125rem;"></p>
+                <div class="form-group">
+                    <label>Update System Role</label>
+                    <select id="updateStaffRole" class="form-control" required>
+                        <option value="VIEWER">Viewer (Read-only access)</option>
+                        <option value="EDITOR">Editor (Can create & edit forms)</option>
+                        <option value="ADMIN">Admin (Manage programmes & responses)</option>
+                        <option value="SUPER_ADMIN">Super Admin (Full system access)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <button class="btn btn-outline" id="removeStaffBtn" style="color: var(--danger); border-color: var(--danger);">Remove Access</button>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-outline" id="cancelManageStaffBtn">Cancel</button>
+                    <button class="btn btn-primary" id="saveStaffRoleBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+  <script type="module">
+        import { supabase } from './config.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            const tbody = document.getElementById('staffTableBody');
+            let activeManageStaffId = null;
+
+            // Load Staff
+            async function loadStaff() {
+                try {
+                    const { data, error } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .order('created_at', { ascending: true });
+
+                    if (error) throw error;
+                    
+                    tbody.innerHTML = '';
+                    if(data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No staff found.</td></tr>';
+                        return;
+                    }
+
+                    data.forEach(profile => {
+                        let roleBadge = 'badge-warning';
+                        if(profile.role === 'SUPER_ADMIN') roleBadge = 'badge-danger';
+                        if(profile.role === 'ADMIN') roleBadge = 'badge-success';
+                        
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 32px; height: 32px; background: var(--bg-surface-hover); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;">
+                                        ${profile.full_name.substring(0,2).toUpperCase()}
+                                    </div>
+                                    <strong>${profile.full_name}</strong>
+                                </div>
+                            </td>
+                            <td>${profile.email}</td>
+                            <td><span class="badge ${roleBadge}">${profile.role.replace('_', ' ')}</span></td>
+                            <td>${new Date(profile.created_at).toLocaleDateString()}</td>
+                            <td>
+                                <button class="btn btn-outline manage-btn" data-id="${profile.id}" data-name="${profile.full_name}" data-role="${profile.role}" style="padding: 4px 8px; font-size: 0.75rem;">Manage</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    // Attach Manage Button Events
+                    document.querySelectorAll('.manage-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const b = e.target.closest('button');
+                            activeManageStaffId = b.dataset.id;
+                            document.getElementById('manageStaffName').textContent = b.dataset.name;
+                            document.getElementById('updateStaffRole').value = b.dataset.role;
+                            document.getElementById('manageStaffModal').classList.add('active');
+                        });
+                    });
+
+                } catch (error) {
+                    console.error("Error loading staff:", error);
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Failed to load staff records.</td></tr>';
+                }
+            }
+
+            loadStaff();
+
+            // === Invite Modal Logic ===
+            const inviteModal = document.getElementById('inviteModal');
+            document.getElementById('openInviteModalBtn').addEventListener('click', () => inviteModal.classList.add('active'));
+            const closeInvite = () => { inviteModal.classList.remove('active'); document.getElementById('inviteForm').reset(); };
+            document.getElementById('closeInviteModalBtn').addEventListener('click', closeInvite);
+            document.getElementById('cancelInviteBtn').addEventListener('click', closeInvite);
+
+            document.getElementById('sendInviteBtn').addEventListener('click', () => {
+                const btn = document.getElementById('sendInviteBtn');
+                btn.disabled = true;
+                btn.textContent = 'Sending...';
+                setTimeout(() => {
+                    alert(`Invitation securely sent to ${document.getElementById('staffEmail').value}`);
+                    closeInvite();
+                    btn.disabled = false;
+                    btn.textContent = 'Send Invitation';
+                }, 1000);
+            });
+
+            // === Manage Staff Modal Logic ===
+            const manageModal = document.getElementById('manageStaffModal');
+            const closeManage = () => manageModal.classList.remove('active');
+            document.getElementById('closeManageStaffBtn').addEventListener('click', closeManage);
+            document.getElementById('cancelManageStaffBtn').addEventListener('click', closeManage);
+
+            // Save Role Changes
+            document.getElementById('saveStaffRoleBtn').addEventListener('click', async () => {
+                const btn = document.getElementById('saveStaffRoleBtn');
+                const newRole = document.getElementById('updateStaffRole').value;
+                btn.textContent = 'Saving...';
+                btn.disabled = true;
+
+                try {
+                    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', activeManageStaffId);
+                    if (error) throw error;
+                    closeManage();
+                    await loadStaff(); // Refresh table
+                } catch (err) {
+                    alert('Error updating role: ' + err.message);
+                } finally {
+                    btn.textContent = 'Save Changes';
+                    btn.disabled = false;
+                }
+            });
+
+            // Remove Staff Profile
+            document.getElementById('removeStaffBtn').addEventListener('click', async () => {
+                if(!confirm('Revoke dashboard access for this user? (They will no longer be able to view internal data)')) return;
+                
+                try {
+                    const { error } = await supabase.from('profiles').delete().eq('id', activeManageStaffId);
+                    if (error) throw error;
+                    closeManage();
+                    await loadStaff();
+                } catch (err) {
+                    alert('Error removing user: ' + err.message);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

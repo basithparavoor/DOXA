@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responses | DOXA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="variables.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="components.css">
+    <link rel="stylesheet" href="notifications.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
+                <span>DOXA ADMIN</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                <a href="programmes.html" class="nav-item"><i data-lucide="folder-kanban"></i> Programmes</a>
+                <a href="forms.html" class="nav-item"><i data-lucide="file-text"></i> Forms</a>
+                <a href="responses.html" class="nav-item active"><i data-lucide="inbox"></i> Responses</a>
+                <a href="files.html" class="nav-item"><i data-lucide="folder-open"></i> File Manager</a>
+                <a href="analytics.html" class="nav-item"><i data-lucide="bar-chart-2"></i> Analytics</a>
+                <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
+                <a href="staff.html" class="nav-item"><i data-lucide="users"></i> Staff</a>
+                <a href="settings.html" class="nav-item"><i data-lucide="settings"></i> Settings</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="search-bar">
+                    <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
+                    <input type="text" id="searchInput" placeholder="Search Registration ID...">
+                </div>
+                <div class="header-actions">
+                    <div class="notification-wrapper" id="notiWrapper">
+                        <button class="icon-btn" id="notiBtn"><i data-lucide="bell"></i><span class="noti-badge" id="notiBadge" style="display: none;">0</span></button>
+                        <div class="noti-dropdown" id="notiDropdown">
+                            <div class="noti-header">
+                                <h4>Notifications</h4>
+                                <button class="noti-mark-read" id="markAllReadBtn">Mark all as read</button>
+                            </div>
+                            <div class="noti-list" id="notiList"><div class="noti-empty">Loading...</div></div>
+                        </div>
+                    </div>
+                    <div class="user-profile">
+                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1>Responses & Registrations</h1>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline" id="exportBtn">
+                            <i data-lucide="download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters Area -->
+                <div style="display: flex; gap: 12px; margin-bottom: 20px; background: var(--bg-surface); padding: 16px; border-radius: var(--radius-lg); border: 1px solid var(--border-light);">
+                    <select id="filterProgramme" class="form-control" style="max-width: 250px;">
+                        <option value="ALL">All Programmes</option>
+                    </select>
+                    <select id="filterForm" class="form-control" style="max-width: 250px;">
+                        <option value="ALL">All Forms</option>
+                    </select>
+                    <select id="filterStatus" class="form-control" style="max-width: 200px;">
+                        <option value="ALL">All Statuses</option>
+                        <option value="SUBMITTED">Submitted</option>
+                        <option value="UNDER_REVIEW">Under Review</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                    </select>
+                </div>
+
+                <!-- Table -->
+                <div class="table-container">
+                    <table class="data-table" id="responsesTable">
+                        <thead id="responsesTableHead">
+                            <!-- Injected dynamically based on filters -->
+                        </thead>
+                        <tbody id="responsesTableBody">
+                            <tr><td colspan="5" style="text-align: center;">Loading responses...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- View Response Modal -->
+    <div class="modal-overlay" id="viewModal">
+        <div class="modal-card" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 id="modalRegId">Registration Details</h2>
+                <button class="modal-close" id="closeViewModalBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="modalAnswersBody">
+                <!-- Answers injected here -->
+            </div>
+            <div class="modal-footer" style="justify-content: space-between; align-items: center;">
+                <div style="display:flex; align-items:center; gap: 12px;">
+                    <label style="font-size: 0.875rem; font-weight: 500;">Update Status:</label>
+                    <select id="statusSelect" class="form-control" style="width: auto; padding: 6px 12px;">
+                        <option value="SUBMITTED">Submitted</option>
+                        <option value="UNDER_REVIEW">Under Review</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                        <option value="COMPLETED">Completed</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="saveStatusBtn">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './config.js';
+        import { NotificationSystem } from './notifications.js';
+        
+        const ResponsesAPI = {
+            async getAll() {
+                const { data, error } = await supabase
+                    .from('responses')
+                    .select(`
+                        id, registration_id, status, submitted_at, data, form_id, programme_id,
+                        forms ( title, schema ), programmes ( name )
+                    `)
+                    .order('submitted_at', { ascending: false });
+                if (error) throw error;
+                return data;
+            },
+            async updateStatus(responseId, newStatus) {
+                const { error } = await supabase.from('responses').update({ status: newStatus }).eq('id', responseId);
+                if (error) throw error;
+                return true;
+            }
+        };
+
+        // Utility: Extract field labels from schema
+        function getFieldMap(schema) {
+            const map = {};
+            if (schema && schema.fields) {
+                schema.fields.forEach(f => {
+                    if (f.id && f.type !== 'section') map[f.id] = f.label;
+                });
+            }
+            return map;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            new NotificationSystem();
+            
+            const thead = document.getElementById('responsesTableHead');
+            const tbody = document.getElementById('responsesTableBody');
+            const viewModal = document.getElementById('viewModal');
+            
+            let currentResponses = [];
+            let filteredResponses = [];
+            let activeResponseId = null;
+
+            const filterProg = document.getElementById('filterProgramme');
+            const filterForm = document.getElementById('filterForm');
+            const filterStatus = document.getElementById('filterStatus');
+            const searchInput = document.getElementById('searchInput');
+
+            async function loadResponses() {
+                try {
+                    currentResponses = await ResponsesAPI.getAll();
+                    filteredResponses = [...currentResponses];
+                    populateDropdowns();
+                    renderTable();
+                } catch (error) {
+                    console.error(error);
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Failed to load responses.</td></tr>';
+                }
+            }
+
+            function populateDropdowns() {
+                const uniqueProgs = [...new Map(currentResponses.map(item => [item.programme_id, { id: item.programme_id, name: item.programmes?.name }])).values()];
+                const uniqueForms = [...new Map(currentResponses.map(item => [item.form_id, { id: item.form_id, title: item.forms?.title }])).values()];
+
+                filterProg.innerHTML = '<option value="ALL">All Programmes</option>';
+                uniqueProgs.forEach(p => {
+                    if(p.id) filterProg.innerHTML += `<option value="${p.id}">${p.name || 'Unknown'}</option>`;
+                });
+
+                filterForm.innerHTML = '<option value="ALL">All Forms</option>';
+                uniqueForms.forEach(f => {
+                    if(f.id) filterForm.innerHTML += `<option value="${f.id}">${f.title || 'Unknown'}</option>`;
+                });
+            }
+
+            function applyFilters() {
+                const progVal = filterProg.value;
+                const formVal = filterForm.value;
+                const statVal = filterStatus.value;
+                const searchVal = searchInput.value.toLowerCase();
+
+                filteredResponses = currentResponses.filter(r => {
+                    const matchProg = progVal === 'ALL' || r.programme_id === progVal;
+                    const matchForm = formVal === 'ALL' || r.form_id === formVal;
+                    const matchStat = statVal === 'ALL' || r.status === statVal;
+                    const matchSearch = r.registration_id.toLowerCase().includes(searchVal);
+                    return matchProg && matchForm && matchStat && matchSearch;
+                });
+                renderTable();
+            }
+
+            filterProg.addEventListener('change', applyFilters);
+            filterForm.addEventListener('change', applyFilters);
+            filterStatus.addEventListener('change', applyFilters);
+            searchInput.addEventListener('input', applyFilters);
+
+            function formatSafeData(val) {
+                if (val === undefined || val === null) return '<em style="color:var(--text-light)">-</em>';
+                if (typeof val === 'object' && val?.type === 'file') {
+                    return `<a href="files.html" style="color:var(--primary); text-decoration:none;"><i data-lucide="paperclip" style="width:14px; vertical-align:middle;"></i> ${val.name}</a>`;
+                }
+                if (Array.isArray(val)) return val.join(', ');
+                return val;
+            }
+
+            function renderTable() {
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
+                
+                if(filteredResponses.length === 0) {
+                    thead.innerHTML = `<tr><th>Registration ID</th><th>Programme / Form</th><th>Submitted Date & Time</th><th>Status</th><th>Actions</th></tr>`;
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No responses match your filters.</td></tr>';
+                    return;
+                }
+
+                const dtOptions = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+
+                if (filterForm.value === 'ALL') {
+                    thead.innerHTML = `
+                        <tr>
+                            <th>Registration ID</th>
+                            <th>Programme / Form</th>
+                            <th>Submitted Date & Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    `;
+
+                    filteredResponses.forEach(resp => {
+                        const statusColors = { 'SUBMITTED': 'badge-warning', 'UNDER_REVIEW': 'badge-warning', 'APPROVED': 'badge-success', 'REJECTED': 'badge-danger', 'COMPLETED': 'badge-success' };
+                        const badgeClass = statusColors[resp.status] || 'badge-warning';
+                        const dtString = new Date(resp.submitted_at).toLocaleString(undefined, dtOptions);
+                        
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong style="font-family: var(--font-mono); color: var(--primary);">${resp.registration_id}</strong></td>
+                            <td><strong>${resp.forms?.title || 'Unknown Form'}</strong><br><span style="color: var(--text-muted); font-size: 0.75rem;">${resp.programmes?.name || 'Unknown Programme'}</span></td>
+                            <td>${dtString}</td>
+                            <td><span class="badge ${badgeClass}">${resp.status.replace('_', ' ')}</span></td>
+                            <td><button class="btn btn-outline view-btn" data-id="${resp.id}" style="padding: 4px 8px; font-size: 0.75rem;">Review</button></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    // Specific form view - extract labels
+                    const formSchema = filteredResponses[0]?.forms?.schema;
+                    const fieldMap = getFieldMap(formSchema);
+
+                    const questionKeysSet = new Set();
+                    filteredResponses.forEach(r => {
+                        if (r.data) Object.keys(r.data).forEach(k => questionKeysSet.add(k));
+                    });
+                    const questionKeys = Array.from(questionKeysSet);
+
+                    let thHtml = `<tr>
+                        <th style="min-width: 140px;">Registration ID</th>
+                        <th style="min-width: 180px;">Submitted Date & Time</th>
+                        <th>Status</th>`;
+                    
+                    questionKeys.forEach(k => { 
+                        // Show the mapped label, or fallback to the key if not found
+                        const label = fieldMap[k] || k.replace('field_', 'Question ');
+                        thHtml += `<th>${label}</th>`; 
+                    });
+                    
+                    thHtml += `<th>Actions</th></tr>`;
+                    thead.innerHTML = thHtml;
+
+                    filteredResponses.forEach(resp => {
+                        const statusColors = { 'SUBMITTED': 'badge-warning', 'UNDER_REVIEW': 'badge-warning', 'APPROVED': 'badge-success', 'REJECTED': 'badge-danger', 'COMPLETED': 'badge-success' };
+                        const badgeClass = statusColors[resp.status] || 'badge-warning';
+                        const dtString = new Date(resp.submitted_at).toLocaleString(undefined, dtOptions);
+                        
+                        let tdHtml = `
+                            <td><strong style="font-family: var(--font-mono); color: var(--primary);">${resp.registration_id}</strong></td>
+                            <td>${dtString}</td>
+                            <td><span class="badge ${badgeClass}">${resp.status.replace('_', ' ')}</span></td>
+                        `;
+                        
+                        questionKeys.forEach(k => {
+                            const val = resp.data ? resp.data[k] : null;
+                            tdHtml += `<td>${formatSafeData(val)}</td>`;
+                        });
+
+                        tdHtml += `<td><button class="btn btn-outline view-btn" data-id="${resp.id}" style="padding: 4px 8px; font-size: 0.75rem;">Manage</button></td>`;
+                        
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = tdHtml;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                lucide.createIcons();
+                document.querySelectorAll('.view-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => openViewModal(e.target.closest('button').dataset.id));
+                });
+            }
+
+            function openViewModal(id) {
+                const resp = currentResponses.find(r => r.id === id);
+                if (!resp) return;
+                
+                const fieldMap = getFieldMap(resp.forms?.schema);
+                activeResponseId = id;
+                document.getElementById('modalRegId').textContent = resp.registration_id;
+                document.getElementById('statusSelect').value = resp.status;
+                
+                const bodyEl = document.getElementById('modalAnswersBody');
+                bodyEl.innerHTML = '';
+                
+                if (resp.data && Object.keys(resp.data).length > 0) {
+                    for (const [key, value] of Object.entries(resp.data)) {
+                        const label = fieldMap[key] || key.replace('field_', 'Question ');
+                        bodyEl.innerHTML += `
+                            <div style="margin-bottom: 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">${label}</div>
+                                <div style="font-size: 1rem; color: var(--text-main);">${formatSafeData(value)}</div>
+                            </div>
+                        `;
+                    }
+                    lucide.createIcons();
+                } else {
+                    bodyEl.innerHTML = '<p style="color: var(--text-muted);">No data payload found for this submission.</p>';
+                }
+                viewModal.classList.add('active');
+            }
+
+            document.getElementById('closeViewModalBtn').addEventListener('click', () => viewModal.classList.remove('active'));
+
+            document.getElementById('saveStatusBtn').addEventListener('click', async () => {
+                if (!activeResponseId) return;
+                const btn = document.getElementById('saveStatusBtn');
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+                try {
+                    await ResponsesAPI.updateStatus(activeResponseId, document.getElementById('statusSelect').value);
+                    viewModal.classList.remove('active');
+                    await loadResponses(); 
+                } catch (error) { alert('Failed to update status: ' + error.message); } 
+                finally { btn.disabled = false; btn.textContent = 'Update'; }
+            });
+
+            // EXPORT CSV LOGIC
+            document.getElementById('exportBtn').addEventListener('click', () => {
+                if(filteredResponses.length === 0) return alert("No data to export.");
+
+                // Build a global map of all field IDs to labels across filtered responses
+                const globalFieldMap = {};
+                filteredResponses.forEach(r => {
+                    const localMap = getFieldMap(r.forms?.schema);
+                    Object.assign(globalFieldMap, localMap);
+                });
+
+                const allKeys = new Set();
+                filteredResponses.forEach(r => {
+                    if (r.data) Object.keys(r.data).forEach(k => allKeys.add(k));
+                });
+                const questionKeys = Array.from(allKeys);
+
+                // Map headers using the actual question labels
+                const headerLabels = questionKeys.map(k => globalFieldMap[k] || k.replace('field_', 'Question '));
+                const headers = ['Registration ID', 'Programme', 'Form', 'Status', 'Submitted Date & Time', ...headerLabels];
+                
+                const rows = filteredResponses.map(r => {
+                    const dtOptions = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                    const dtString = new Date(r.submitted_at).toLocaleString(undefined, dtOptions);
+
+                    const baseData = [
+                        r.registration_id,
+                        `"${r.programmes?.name || ''}"`,
+                        `"${r.forms?.title || ''}"`,
+                        r.status,
+                        `"${dtString}"`
+                    ];
+                    
+                    const answersData = questionKeys.map(k => {
+                        let val = r.data ? r.data[k] : '';
+                        if (typeof val === 'object' && val?.type === 'file') val = val.name;
+                        if (Array.isArray(val)) val = val.join(', ');
+                        
+                        if (val === undefined || val === null) return '""';
+                        const safeVal = String(val).replace(/"/g, '""');
+                        return `"${safeVal}"`;
+                    });
+
+                    return [...baseData, ...answersData].join(',');
+                });
+
+                const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `Responses_Export_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+            loadResponses();
+        });
+    </script>
+</body>
+</html>

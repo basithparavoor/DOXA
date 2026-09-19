@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programme Details | DOXA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="variables.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="components.css">
+    <link rel="stylesheet" href="notifications.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
+                <span>DOXA ADMIN</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                <a href="programmes.html" class="nav-item active"><i data-lucide="folder-kanban"></i> Programmes</a>
+                <a href="forms.html" class="nav-item"><i data-lucide="file-text"></i> Forms</a>
+                <a href="responses.html" class="nav-item"><i data-lucide="inbox"></i> Responses</a>
+                <a href="files.html" class="nav-item"><i data-lucide="folder-open"></i> File Manager</a>
+                <a href="analytics.html" class="nav-item"><i data-lucide="bar-chart-2"></i> Analytics</a>
+                <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
+                <a href="staff.html" class="nav-item"><i data-lucide="users"></i> Staff</a>
+                <a href="settings.html" class="nav-item"><i data-lucide="settings"></i> Settings</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="search-bar">
+                    <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
+                    <input type="text" placeholder="Search forms...">
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="window.location.href='programmes.html'" title="Back to Programmes">
+                        <i data-lucide="arrow-left"></i>
+                    </button>
+                    <div class="user-profile">
+                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1 id="progName">Loading Programme...</h1>
+                        <p id="progCode" style="color: var(--text-muted); font-size: 0.875rem; margin-top: 4px; font-family: var(--font-mono);"></p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="createFormBtn">
+                            <i data-lucide="plus"></i> Create Form in Programme
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="progFormsTable">
+                        <thead>
+                            <tr>
+                                <th>Form Title</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="progFormsTableBody">
+                            <tr><td colspan="4" style="text-align: center;">Loading forms...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { supabase } from './config.js';
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const progId = urlParams.get('id');
+
+            if (!progId) {
+                document.getElementById('progName').textContent = "Programme Not Found";
+                return;
+            }
+
+            // Route create button to builder with pre-filled programme
+            document.getElementById('createFormBtn').addEventListener('click', () => {
+                window.location.href = `builder.html?prog_id=${progId}`;
+            });
+
+            try {
+                // Fetch Programme Details & its Forms
+                const { data: prog, error } = await supabase
+                    .from('programmes')
+                    .select(`*, forms(*)`)
+                    .eq('id', progId)
+                    .single();
+
+                if (error) throw error;
+
+                document.getElementById('progName').textContent = prog.name;
+                document.getElementById('progCode').textContent = `Code: ${prog.short_code} | Status: ${prog.status}`;
+
+                const tbody = document.getElementById('progFormsTableBody');
+                tbody.innerHTML = '';
+
+                if (!prog.forms || prog.forms.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No forms created for this programme yet.</td></tr>';
+                    return;
+                }
+
+                prog.forms.forEach(form => {
+                    const statusClass = form.status === 'PUBLISHED' ? 'badge-success' : 'badge-warning';
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>
+                            <strong>${form.title}</strong><br>
+                            <a href="public-form.html?slug=${form.slug}" target="_blank" style="color: var(--primary); font-size: 0.75rem; text-decoration: none;">/${form.slug}</a>
+                        </td>
+                        <td><span class="badge ${statusClass}">${form.status}</span></td>
+                        <td>${new Date(form.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <button class="btn btn-outline" onclick="window.location.href='builder.html?id=${form.id}'" style="padding: 4px 8px; font-size: 0.75rem;">Edit Form</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('progName').textContent = "Error Loading Programme";
+            }
+        });
+    </script>
+</body>
+</html>

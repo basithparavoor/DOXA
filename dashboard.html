@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | DOXA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="variables.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="notifications.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar-overlay" id="mobileSidebarOverlay"></div>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <!-- Replaced Lucide icon with default logo.png -->
+                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
+                <span>DOXA ADMIN</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="programmes.html" class="nav-item">
+                    <i data-lucide="folder-kanban"></i> Programmes
+                </a>
+                <a href="forms.html" class="nav-item">
+                    <i data-lucide="file-text"></i> Forms
+                </a>
+                <a href="responses.html" class="nav-item">
+                    <i data-lucide="inbox"></i> Responses
+                </a>
+                <a href="files.html" class="nav-item">
+                    <i data-lucide="folder-open"></i> File Manager
+                </a>
+                <a href="analytics.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i> Analytics
+                </a>
+                
+                <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
+                
+                <a href="staff.html" class="nav-item">
+                    <i data-lucide="users"></i> Staff
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i data-lucide="settings"></i> Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <!-- NEW: Hamburger Button -->
+                <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="search-bar">
+                    <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
+                    <input type="text" placeholder="Search forms, responses (Ctrl+K)...">
+                </div>
+
+                <div class="header-actions">
+                    <!-- Notification Wrapper -->
+                    <div class="notification-wrapper" id="notiWrapper">
+                        <button class="icon-btn" id="notiBtn">
+                            <i data-lucide="bell"></i>
+                            <span class="noti-badge" id="notiBadge" style="display: none;">0</span>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div class="noti-dropdown" id="notiDropdown">
+                            <div class="noti-header">
+                                <h4>Notifications</h4>
+                                <button class="noti-mark-read" id="markAllReadBtn">Mark all as read</button>
+                            </div>
+                            <div class="noti-list" id="notiList">
+                                <div class="noti-empty">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Icon -->
+                    <div class="user-profile">
+                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;" id="userInitials">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1 id="welcomeMessage">Overview</h1>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="window.location.href='programmes.html'">
+                            <i data-lucide="plus"></i> New Programme
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span>Active Programmes</span>
+                            <i data-lucide="folder" style="color: var(--primary)"></i>
+                        </div>
+                        <div class="stat-value" id="statProgrammes">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span>Published Forms</span>
+                            <i data-lucide="file-check-2" style="color: var(--success)"></i>
+                        </div>
+                        <div class="stat-value" id="statForms">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span>Total Submissions</span>
+                            <i data-lucide="inbox" style="color: var(--warning)"></i>
+                        </div>
+                        <div class="stat-value" id="statSubmissions">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span>Pending Reviews</span>
+                            <i data-lucide="clock" style="color: var(--danger)"></i>
+                        </div>
+                        <div class="stat-value" id="statPending">-</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { supabase } from './config.js';
+        import { NotificationSystem } from './notifications.js';
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            
+            // Initialize the Notification Bell
+            new NotificationSystem();
+            
+            // 1. Session Check (Auth guard)
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // 2. Fetch User Profile
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', session.user.id)
+                .single();
+                
+            if (profile) {
+                document.getElementById('welcomeMessage').textContent = `Welcome back, ${profile.full_name.split(' ')[0]}`;
+                const initials = profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2);
+                document.getElementById('userInitials').textContent = initials.toUpperCase();
+            }
+
+            // 3. Load Dashboard Stats
+            async function loadStats() {
+                try {
+                    const [progRes, formsRes, subRes] = await Promise.all([
+                        supabase.from('programmes').select('*', { count: 'exact', head: true }).eq('status', 'ACTIVE'),
+                        supabase.from('forms').select('*', { count: 'exact', head: true }).eq('status', 'PUBLISHED'),
+                        supabase.from('responses').select('*', { count: 'exact', head: true })
+                    ]);
+
+                    document.getElementById('statProgrammes').textContent = progRes.count || 0;
+                    document.getElementById('statForms').textContent = formsRes.count || 0;
+                    document.getElementById('statSubmissions').textContent = subRes.count || 0;
+                    document.getElementById('statPending').textContent = '0'; 
+                } catch (err) {
+                    console.error("Error loading stats", err);
+                }
+            }
+            
+            loadStats();
+        });
+    </script>
+</body>
+</html>

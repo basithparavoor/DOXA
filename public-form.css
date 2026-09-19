@@ -1,0 +1,150 @@
+/* public-form.css */
+body {
+    background-color: var(--bg-surface-hover);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    font-family: var(--font-sans);
+}
+
+.public-form-container {
+    background: var(--bg-surface);
+    width: 100%;
+    max-width: 640px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+}
+
+.public-form-header {
+    background: var(--primary);
+    color: white;
+    padding: 40px;
+    text-align: center;
+}
+
+.public-form-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.public-form-desc {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.public-form-body {
+    padding: 40px;
+}
+
+/* Field Styles */
+.field-wrapper {
+    margin-bottom: 24px;
+}
+
+.field-label {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.field-required {
+    color: var(--danger);
+    margin-left: 4px;
+}
+
+.public-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all var(--transition-fast);
+    background: var(--bg-base);
+}
+
+.public-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-light);
+    background: var(--bg-surface);
+}
+
+textarea.public-input {
+    min-height: 120px;
+    resize: vertical;
+}
+
+/* Radio & Checkbox */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.radio-label:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-base);
+}
+
+.radio-label input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+}
+
+.form-footer {
+    padding: 32px 40px;
+    background: var(--bg-base);
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.submit-btn {
+    padding: 12px 24px;
+    font-size: 1rem;
+}
+
+/* =========================================================
+   MOBILE RESPONDENT FORM (Add to bottom of public-form.css)
+   ========================================================= */
+@media (max-width: 640px) {
+    body {
+        padding: 16px 8px;
+    }
+    
+    .public-form-header {
+        padding: 32px 20px;
+    }
+    
+    .public-form-body {
+        padding: 24px 20px;
+    }
+    
+    .form-footer {
+        padding: 24px 20px;
+    }
+    
+    .submit-btn {
+        width: 100%; /* Full width button on mobile */
+    }
+}

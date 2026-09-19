@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programmes | DOXA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="variables.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="components.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+         <div class="sidebar-overlay" id="mobileSidebarOverlay"></div>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <!-- Replaced Lucide icon with default logo.png -->
+                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
+                <span>DOXA ADMIN</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="programmes.html" class="nav-item">
+                    <i data-lucide="folder-kanban"></i> Programmes
+                </a>
+                <a href="forms.html" class="nav-item">
+                    <i data-lucide="file-text"></i> Forms
+                </a>
+                <a href="responses.html" class="nav-item">
+                    <i data-lucide="inbox"></i> Responses
+                </a>
+                <a href="files.html" class="nav-item">
+                    <i data-lucide="folder-open"></i> File Manager
+                </a>
+                <a href="analytics.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i> Analytics
+                </a>
+                
+                <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
+                
+                <a href="staff.html" class="nav-item">
+                    <i data-lucide="users"></i> Staff
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i data-lucide="settings"></i> Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <!-- NEW: Hamburger Button -->
+                <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="search-bar">
+                    <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
+                    <input type="text" placeholder="Search programmes...">
+                </div>
+                <div class="header-actions">
+                    <div class="user-profile">
+                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">
+                            AD
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1>Programmes</h1>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="openCreateModalBtn">
+                            <i data-lucide="plus"></i> New Programme
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="table-container">
+                    <table class="data-table" id="programmesTable">
+                        <thead>
+                            <tr>
+                                <th>Name & Code</th>
+                                <th>Status</th>
+                                <th>Forms</th>
+                                <th>Timeline</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="programmesTableBody">
+                            <tr><td colspan="5" style="text-align: center;">Loading programmes...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div class="modal-overlay" id="programmeModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modalTitle">Create Programme</h2>
+                <button class="modal-close" id="closeModalBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="programmeForm">
+                    <div class="form-group">
+                        <label>Programme Name</label>
+                        <input type="text" id="progName" class="form-control" required placeholder="e.g. SSF Sahityotsav 2026">
+                    </div>
+                    <div class="form-group">
+                        <label>Short Code</label>
+                        <input type="text" id="progCode" class="form-control" required placeholder="e.g. SSF-SAH-26">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="progDesc" class="form-control" placeholder="Brief details about the programme..."></textarea>
+                    </div>
+                    <div style="display: flex; gap: 16px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Start Date</label>
+                            <input type="date" id="progStart" class="form-control">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>End Date</label>
+                            <input type="date" id="progEnd" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelModalBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveProgrammeBtn">Save Programme</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './config.js';
+        import { ProgrammesAPI } from './programmes.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+
+            const tbody = document.getElementById('programmesTableBody');
+            const modal = document.getElementById('programmeModal');
+            
+            // Load Data
+            async function loadProgrammes() {
+                try {
+                    const programmes = await ProgrammesAPI.getAll();
+                    tbody.innerHTML = '';
+                    
+                    if(programmes.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No programmes found. Create one to get started.</td></tr>';
+                        return;
+                    }
+
+                    programmes.forEach(prog => {
+                        const statusClass = prog.status === 'ACTIVE' ? 'badge-success' : 'badge-warning';
+                        const formsCount = prog.forms[0]?.count || 0;
+                        
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>
+                                <strong>${prog.name}</strong><br>
+                                <span style="color: var(--text-muted); font-size: 0.75rem;">${prog.short_code}</span>
+                            </td>
+                            <td><span class="badge ${statusClass}">${prog.status}</span></td>
+                            <td>${formsCount} Form(s)</td>
+                            <td>
+                                ${prog.start_date ? new Date(prog.start_date).toLocaleDateString() : '-'} to<br>
+                                ${prog.end_date ? new Date(prog.end_date).toLocaleDateString() : '-'}
+                            </td>
+                            <td>
+                                <button class="btn btn-outline" onclick="window.location.href='programme.html?id=${prog.id}'" style="padding: 4px 8px; font-size: 0.75rem;">Manage</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } catch (error) {
+                    console.error(error);
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Failed to load programmes.</td></tr>';
+                }
+            }
+
+            loadProgrammes();
+
+            // Modal Logic
+            const openModal = () => modal.classList.add('active');
+            const closeModal = () => {
+                modal.classList.remove('active');
+                document.getElementById('programmeForm').reset();
+            };
+
+            document.getElementById('openCreateModalBtn').addEventListener('click', openModal);
+            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+            document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+
+            document.getElementById('saveProgrammeBtn').addEventListener('click', async () => {
+                const btn = document.getElementById('saveProgrammeBtn');
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+
+                try {
+                    await ProgrammesAPI.create({
+                        name: document.getElementById('progName').value,
+                        short_code: document.getElementById('progCode').value,
+                        description: document.getElementById('progDesc').value,
+                        start_date: document.getElementById('progStart').value || null,
+                        end_date: document.getElementById('progEnd').value || null,
+                        status: 'DRAFT'
+                    });
+                    
+                    closeModal();
+                    await loadProgrammes();
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Save Programme';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

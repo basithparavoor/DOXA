@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Form</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="variables.css">
+    <link rel="stylesheet" href="public-form.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    
+    <!-- Render Container -->
+    <div id="formContainer" style="width: 100%; display: flex; justify-content: center;">
+        <div style="padding: 100px; color: var(--text-muted);">Loading form...</div>
+    </div>
+
+    <script type="module">
+        import { FormRenderer } from './form-renderer.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get the form slug from the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const slug = urlParams.get('slug');
+            
+            if (!slug) {
+                document.getElementById('formContainer').innerHTML = 
+                    `<div style="padding: 40px; color: var(--danger);">Invalid form link. No slug provided.</div>`;
+                return;
+            }
+
+            // Initialize the renderer
+            new FormRenderer('formContainer', slug);
+        });
+    </script>
+</body>
+</html>
