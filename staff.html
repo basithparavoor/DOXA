@@ -257,7 +257,11 @@
                     // e.g. await supabase.functions.invoke('invite-user', { body: { email, role, name } })
                     // For the frontend UI, we simulate an insertion into the profiles table if RLS permits
                     
+                    // Generate a standard UUID for the mock user
+                    const mockId = crypto.randomUUID();
+                    
                     const { error } = await supabase.from('profiles').insert([{ 
+                        id: mockId,
                         email: email, 
                         full_name: name, 
                         role: role 
