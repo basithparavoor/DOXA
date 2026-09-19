@@ -273,6 +273,20 @@
 
             loadForms();
         });
+
+        async function grantFormAccess(formId, userId, role = 'VIEWER') {
+    // Attempt to insert the permission explicitly. 
+    // Super Admins automatically see everything due to the RLS policy.
+    const { error } = await supabase.from('form_permissions').insert([{
+        form_id: formId,
+        user_id: userId,
+        access_level: role // 'VIEWER' or 'EDITOR'
+    }]);
+    
+    if (error) alert('Failed to update permissions: ' + error.message);
+    else alert('Permissions updated successfully.');
+}
+
     </script>
 </body>
 </html>

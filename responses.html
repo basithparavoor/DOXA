@@ -8,15 +8,31 @@
     <link rel="stylesheet" href="variables.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="components.css">
-    <link rel="stylesheet" href="notifications.css">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Kanban Board Styles */
+        .kanban-board { display: none; gap: 24px; overflow-x: auto; padding-bottom: 24px; align-items: flex-start; }
+        .kanban-board.active { display: flex; }
+        .kanban-column { flex: 0 0 320px; background: var(--bg-surface-hover); border-radius: var(--radius-lg); padding: 16px; border: 1px solid var(--border-light); min-height: 400px; }
+        .kanban-header { font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); }
+        .kanban-count { background: #e2e8f0; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; }
+        .kanban-cards { min-height: 350px; }
+        
+        .kanban-card { background: #fff; padding: 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); margin-bottom: 12px; cursor: grab; transition: transform 0.2s, box-shadow 0.2s; }
+        .kanban-card:active { cursor: grabbing; transform: scale(0.98); }
+        .kanban-card.dragging { opacity: 0.5; }
+        .kanban-column.drag-over { background: #e2e8f0; border: 2px dashed var(--primary); }
+        
+        .card-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: var(--text-main); }
+        .card-meta { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; }
+    </style>
 </head>
 <body>
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
+                <img id="globalSidebarLogo" src="logo.png" alt="Logo" style="height: 28px; object-fit: contain;">
                 <span>DOXA ADMIN</span>
             </div>
             <nav class="sidebar-nav">
@@ -39,21 +55,6 @@
                     <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
                     <input type="text" id="searchInput" placeholder="Search Registration ID...">
                 </div>
-                <div class="header-actions">
-                    <div class="notification-wrapper" id="notiWrapper">
-                        <button class="icon-btn" id="notiBtn"><i data-lucide="bell"></i><span class="noti-badge" id="notiBadge" style="display: none;">0</span></button>
-                        <div class="noti-dropdown" id="notiDropdown">
-                            <div class="noti-header">
-                                <h4>Notifications</h4>
-                                <button class="noti-mark-read" id="markAllReadBtn">Mark all as read</button>
-                            </div>
-                            <div class="noti-list" id="notiList"><div class="noti-empty">Loading...</div></div>
-                        </div>
-                    </div>
-                    <div class="user-profile">
-                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">AD</div>
-                    </div>
-                </div>
             </header>
 
             <div class="page-content">
@@ -62,20 +63,19 @@
                         <h1>Responses & Registrations</h1>
                     </div>
                     <div class="page-actions">
-                        <button class="btn btn-outline" id="exportBtn">
-                            <i data-lucide="download"></i> Export CSV
-                        </button>
+                        <!-- View Toggles -->
+                        <div style="display: flex; background: var(--bg-surface-hover); border-radius: var(--radius-md); border: 1px solid var(--border-light); padding: 4px; margin-right: 12px;">
+                            <button id="viewTableBtn" class="btn btn-outline" style="border: none; background: #fff; box-shadow: var(--shadow-sm);"><i data-lucide="list"></i> Table</button>
+                            <button id="viewBoardBtn" class="btn btn-outline" style="border: none;"><i data-lucide="kanban"></i> Board</button>
+                        </div>
+                        <button class="btn btn-outline" id="exportBtn"><i data-lucide="download"></i> Export CSV</button>
                     </div>
                 </div>
 
-                <!-- Filters Area -->
+                <!-- Filters -->
                 <div style="display: flex; gap: 12px; margin-bottom: 20px; background: var(--bg-surface); padding: 16px; border-radius: var(--radius-lg); border: 1px solid var(--border-light);">
-                    <select id="filterProgramme" class="form-control" style="max-width: 250px;">
-                        <option value="ALL">All Programmes</option>
-                    </select>
-                    <select id="filterForm" class="form-control" style="max-width: 250px;">
-                        <option value="ALL">All Forms</option>
-                    </select>
+                    <select id="filterProgramme" class="form-control" style="max-width: 250px;"><option value="ALL">All Programmes</option></select>
+                    <select id="filterForm" class="form-control" style="max-width: 250px;"><option value="ALL">All Forms</option></select>
                     <select id="filterStatus" class="form-control" style="max-width: 200px;">
                         <option value="ALL">All Statuses</option>
                         <option value="SUBMITTED">Submitted</option>
@@ -85,43 +85,51 @@
                     </select>
                 </div>
 
-                <!-- Table -->
-                <div class="table-container">
+                <!-- Table View -->
+                <div class="table-container" id="tableView">
                     <table class="data-table" id="responsesTable">
-                        <thead id="responsesTableHead">
-                            <!-- Injected dynamically based on filters -->
-                        </thead>
-                        <tbody id="responsesTableBody">
-                            <tr><td colspan="5" style="text-align: center;">Loading responses...</td></tr>
-                        </tbody>
+                        <thead id="responsesTableHead"></thead>
+                        <tbody id="responsesTableBody"><tr><td colspan="5" style="text-align: center;">Loading...</td></tr></tbody>
                     </table>
+                </div>
+
+                <!-- Kanban Board View -->
+                <div class="kanban-board" id="boardView">
+                    <div class="kanban-column" data-status="SUBMITTED">
+                        <div class="kanban-header">Submitted <span class="kanban-count" id="count_SUBMITTED">0</span></div>
+                        <div class="kanban-cards" id="col_SUBMITTED"></div>
+                    </div>
+                    <div class="kanban-column" data-status="UNDER_REVIEW">
+                        <div class="kanban-header" style="color: #F59E0B;">Under Review <span class="kanban-count" id="count_UNDER_REVIEW">0</span></div>
+                        <div class="kanban-cards" id="col_UNDER_REVIEW"></div>
+                    </div>
+                    <div class="kanban-column" data-status="APPROVED">
+                        <div class="kanban-header" style="color: #10B981;">Approved <span class="kanban-count" id="count_APPROVED">0</span></div>
+                        <div class="kanban-cards" id="col_APPROVED"></div>
+                    </div>
+                    <div class="kanban-column" data-status="REJECTED">
+                        <div class="kanban-header" style="color: #EF4444;">Rejected <span class="kanban-count" id="count_REJECTED">0</span></div>
+                        <div class="kanban-cards" id="col_REJECTED"></div>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- View Response Modal -->
+    <!-- View Modal -->
     <div class="modal-overlay" id="viewModal">
         <div class="modal-card" style="max-width: 600px;">
             <div class="modal-header">
                 <h2 id="modalRegId">Registration Details</h2>
                 <button class="modal-close" id="closeViewModalBtn"><i data-lucide="x"></i></button>
             </div>
-            <div class="modal-body" id="modalAnswersBody">
-                <!-- Answers injected here -->
-            </div>
+            <div class="modal-body" id="modalAnswersBody" style="max-height: 60vh; overflow-y: auto;"></div>
             <div class="modal-footer" style="justify-content: space-between; align-items: center;">
-                <button class="btn btn-outline" id="deleteResponseBtn" style="color: var(--danger); border-color: var(--danger);">
-                    <i data-lucide="trash-2" style="width: 14px; vertical-align: middle;"></i> Delete Response
-                </button>
+                <button class="btn btn-outline" id="deleteResponseBtn" style="color: var(--danger); border-color: var(--danger);"><i data-lucide="trash-2"></i> Delete</button>
                 <div style="display:flex; align-items:center; gap: 12px;">
-                    <label style="font-size: 0.875rem; font-weight: 500;">Update Status:</label>
                     <select id="statusSelect" class="form-control" style="width: auto; padding: 6px 12px;">
-                        <option value="SUBMITTED">Submitted</option>
-                        <option value="UNDER_REVIEW">Under Review</option>
-                        <option value="APPROVED">Approved</option>
-                        <option value="REJECTED">Rejected</option>
-                        <option value="COMPLETED">Completed</option>
+                        <option value="SUBMITTED">Submitted</option><option value="UNDER_REVIEW">Under Review</option>
+                        <option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option>
                     </select>
                     <button class="btn btn-primary" id="saveStatusBtn">Update</button>
                 </div>
@@ -131,93 +139,48 @@
 
     <script type="module">
         import { supabase } from './config.js';
-        import { NotificationSystem } from './notifications.js';
-        
+
         const ResponsesAPI = {
             async getAll() {
-                const { data, error } = await supabase
-                    .from('responses')
-                    .select(`
-                        id, registration_id, status, submitted_at, data, form_id, programme_id,
-                        forms ( title, schema ), programmes ( name )
-                    `)
-                    .order('submitted_at', { ascending: false });
-                if (error) throw error;
-                return data;
+                const { data, error } = await supabase.from('responses').select('id, registration_id, status, submitted_at, data, form_id, programme_id, forms ( title, schema ), programmes ( name )').order('submitted_at', { ascending: false });
+                if (error) throw error; return data;
             },
             async updateStatus(responseId, newStatus) {
                 const { error } = await supabase.from('responses').update({ status: newStatus }).eq('id', responseId);
-                if (error) throw error;
-                return true;
+                if (error) throw error; return true;
             },
             async delete(responseId) {
                 const { error } = await supabase.from('responses').delete().eq('id', responseId);
-                if (error) throw error;
-                return true;
+                if (error) throw error; return true;
             }
         };
 
-        // Utility: Extract field labels from schema
         function getFieldMap(schema) {
             const map = {};
-            if (schema && schema.fields) {
-                schema.fields.forEach(f => {
-                    if (f.id && f.type !== 'section') map[f.id] = f.label;
-                });
-            }
+            if (schema && schema.fields) schema.fields.forEach(f => { if (f.id && f.type !== 'section') map[f.id] = f.label; });
             return map;
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
-            new NotificationSystem();
-            
-            const thead = document.getElementById('responsesTableHead');
-            const tbody = document.getElementById('responsesTableBody');
-            const viewModal = document.getElementById('viewModal');
             
             let currentResponses = [];
             let filteredResponses = [];
             let activeResponseId = null;
+            let currentMode = 'table'; // table or board
 
             const filterProg = document.getElementById('filterProgramme');
             const filterForm = document.getElementById('filterForm');
             const filterStatus = document.getElementById('filterStatus');
             const searchInput = document.getElementById('searchInput');
 
-
-// Delete Response Logic from Modal
-            document.getElementById('deleteResponseBtn').addEventListener('click', async () => {
-                if (!activeResponseId) return;
-                if (!confirm("Are you sure you want to permanently delete this response? This action cannot be undone.")) return;
-
-                const btn = document.getElementById('deleteResponseBtn');
-                btn.disabled = true;
-                btn.textContent = 'Deleting...';
-
-                try {
-                    await ResponsesAPI.delete(activeResponseId);
-                    viewModal.classList.remove('active');
-                    await loadResponses(); // Refresh table
-                } catch (error) {
-                    alert('Failed to delete response: ' + error.message);
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i data-lucide="trash-2" style="width: 14px; vertical-align: middle;"></i> Delete Response';
-                    lucide.createIcons();
-                }
-            });
-
             async function loadResponses() {
                 try {
                     currentResponses = await ResponsesAPI.getAll();
                     filteredResponses = [...currentResponses];
                     populateDropdowns();
-                    renderTable();
-                } catch (error) {
-                    console.error(error);
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Failed to load responses.</td></tr>';
-                }
+                    renderView();
+                } catch (error) { console.error(error); }
             }
 
             function populateDropdowns() {
@@ -225,22 +188,14 @@
                 const uniqueForms = [...new Map(currentResponses.map(item => [item.form_id, { id: item.form_id, title: item.forms?.title }])).values()];
 
                 filterProg.innerHTML = '<option value="ALL">All Programmes</option>';
-                uniqueProgs.forEach(p => {
-                    if(p.id) filterProg.innerHTML += `<option value="${p.id}">${p.name || 'Unknown'}</option>`;
-                });
+                uniqueProgs.forEach(p => { if(p.id) filterProg.innerHTML += `<option value="${p.id}">${p.name || 'Unknown'}</option>`; });
 
                 filterForm.innerHTML = '<option value="ALL">All Forms</option>';
-                uniqueForms.forEach(f => {
-                    if(f.id) filterForm.innerHTML += `<option value="${f.id}">${f.title || 'Unknown'}</option>`;
-                });
+                uniqueForms.forEach(f => { if(f.id) filterForm.innerHTML += `<option value="${f.id}">${f.title || 'Unknown'}</option>`; });
             }
 
             function applyFilters() {
-                const progVal = filterProg.value;
-                const formVal = filterForm.value;
-                const statVal = filterStatus.value;
-                const searchVal = searchInput.value.toLowerCase();
-
+                const progVal = filterProg.value; const formVal = filterForm.value; const statVal = filterStatus.value; const searchVal = searchInput.value.toLowerCase();
                 filteredResponses = currentResponses.filter(r => {
                     const matchProg = progVal === 'ALL' || r.programme_id === progVal;
                     const matchForm = formVal === 'ALL' || r.form_id === formVal;
@@ -248,116 +203,148 @@
                     const matchSearch = r.registration_id.toLowerCase().includes(searchVal);
                     return matchProg && matchForm && matchStat && matchSearch;
                 });
-                renderTable();
+                renderView();
             }
 
-            filterProg.addEventListener('change', applyFilters);
-            filterForm.addEventListener('change', applyFilters);
-            filterStatus.addEventListener('change', applyFilters);
-            searchInput.addEventListener('input', applyFilters);
+            filterProg.addEventListener('change', applyFilters); filterForm.addEventListener('change', applyFilters);
+            filterStatus.addEventListener('change', applyFilters); searchInput.addEventListener('input', applyFilters);
 
-            function formatSafeData(val) {
-                if (val === undefined || val === null) return '<em style="color:var(--text-light)">-</em>';
-                if (typeof val === 'object' && val?.type === 'file') {
-                    return `<a href="files.html" style="color:var(--primary); text-decoration:none;"><i data-lucide="paperclip" style="width:14px; vertical-align:middle;"></i> ${val.name}</a>`;
-                }
-                if (Array.isArray(val)) return val.join(', ');
-                return val;
+            // --- VIEW TOGGLES ---
+            document.getElementById('viewTableBtn').addEventListener('click', (e) => {
+                currentMode = 'table';
+                e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                document.getElementById('viewBoardBtn').style.background = 'transparent'; document.getElementById('viewBoardBtn').style.boxShadow = 'none';
+                document.getElementById('tableView').style.display = 'block'; document.getElementById('boardView').classList.remove('active');
+                renderView();
+            });
+
+            document.getElementById('viewBoardBtn').addEventListener('click', (e) => {
+                currentMode = 'board';
+                e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                document.getElementById('viewTableBtn').style.background = 'transparent'; document.getElementById('viewTableBtn').style.boxShadow = 'none';
+                document.getElementById('tableView').style.display = 'none'; document.getElementById('boardView').classList.add('active');
+                renderView();
+            });
+
+            function renderView() {
+                if (currentMode === 'table') renderTable();
+                else renderBoard();
             }
 
+            // --- TABLE LOGIC ---
             function renderTable() {
-                thead.innerHTML = '';
-                tbody.innerHTML = '';
+                const thead = document.getElementById('responsesTableHead');
+                const tbody = document.getElementById('responsesTableBody');
+                thead.innerHTML = ''; tbody.innerHTML = '';
                 
                 if(filteredResponses.length === 0) {
-                    thead.innerHTML = `<tr><th>Registration ID</th><th>Programme / Form</th><th>Submitted Date & Time</th><th>Status</th><th>Actions</th></tr>`;
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No responses match your filters.</td></tr>';
-                    return;
+                    thead.innerHTML = `<tr><th>Registration ID</th><th>Programme / Form</th><th>Submitted</th><th>Status</th><th>Actions</th></tr>`;
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No responses match filters.</td></tr>'; return;
                 }
 
-                const dtOptions = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-
                 if (filterForm.value === 'ALL') {
-                    thead.innerHTML = `
-                        <tr>
-                            <th>Registration ID</th>
-                            <th>Programme / Form</th>
-                            <th>Submitted Date & Time</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    `;
-
+                    thead.innerHTML = `<tr><th>Registration ID</th><th>Programme / Form</th><th>Submitted</th><th>Status</th><th>Actions</th></tr>`;
                     filteredResponses.forEach(resp => {
-                        const statusColors = { 'SUBMITTED': 'badge-warning', 'UNDER_REVIEW': 'badge-warning', 'APPROVED': 'badge-success', 'REJECTED': 'badge-danger', 'COMPLETED': 'badge-success' };
-                        const badgeClass = statusColors[resp.status] || 'badge-warning';
-                        const dtString = new Date(resp.submitted_at).toLocaleString(undefined, dtOptions);
-                        
+                        const statusColors = { 'SUBMITTED': 'badge-warning', 'UNDER_REVIEW': 'badge-warning', 'APPROVED': 'badge-success', 'REJECTED': 'badge-danger' };
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td><strong style="font-family: var(--font-mono); color: var(--primary);">${resp.registration_id}</strong></td>
-                            <td><strong>${resp.forms?.title || 'Unknown Form'}</strong><br><span style="color: var(--text-muted); font-size: 0.75rem;">${resp.programmes?.name || 'Unknown Programme'}</span></td>
-                            <td>${dtString}</td>
-                            <td><span class="badge ${badgeClass}">${resp.status.replace('_', ' ')}</span></td>
+                            <td><strong>${resp.forms?.title || 'Unknown Form'}</strong><br><span style="color: var(--text-muted); font-size: 0.75rem;">${resp.programmes?.name || ''}</span></td>
+                            <td>${new Date(resp.submitted_at).toLocaleDateString()}</td>
+                            <td><span class="badge ${statusColors[resp.status] || 'badge-warning'}">${resp.status.replace('_', ' ')}</span></td>
                             <td><button class="btn btn-outline view-btn" data-id="${resp.id}" style="padding: 4px 8px; font-size: 0.75rem;">Review</button></td>
                         `;
                         tbody.appendChild(tr);
                     });
                 } else {
-                    // Specific form view - extract labels
                     const formSchema = filteredResponses[0]?.forms?.schema;
                     const fieldMap = getFieldMap(formSchema);
-
-                    const questionKeysSet = new Set();
-                    filteredResponses.forEach(r => {
-                        if (r.data) Object.keys(r.data).forEach(k => questionKeysSet.add(k));
-                    });
-                    const questionKeys = Array.from(questionKeysSet);
-
-                    let thHtml = `<tr>
-                        <th style="min-width: 140px;">Registration ID</th>
-                        <th style="min-width: 180px;">Submitted Date & Time</th>
-                        <th>Status</th>`;
+                    const allKeys = Array.from(new Set(filteredResponses.flatMap(r => Object.keys(r.data || {}))));
                     
-                    questionKeys.forEach(k => { 
-                        // Show the mapped label, or fallback to the key if not found
-                        const label = fieldMap[k] || k.replace('field_', 'Question ');
-                        thHtml += `<th>${label}</th>`; 
-                    });
-                    
+                    let thHtml = `<tr><th>Registration ID</th><th>Submitted</th><th>Status</th>`;
+                    allKeys.slice(0, 4).forEach(k => thHtml += `<th>${fieldMap[k] || k}</th>`); // Show first 4 fields to avoid overflow
                     thHtml += `<th>Actions</th></tr>`;
                     thead.innerHTML = thHtml;
 
                     filteredResponses.forEach(resp => {
-                        const statusColors = { 'SUBMITTED': 'badge-warning', 'UNDER_REVIEW': 'badge-warning', 'APPROVED': 'badge-success', 'REJECTED': 'badge-danger', 'COMPLETED': 'badge-success' };
-                        const badgeClass = statusColors[resp.status] || 'badge-warning';
-                        const dtString = new Date(resp.submitted_at).toLocaleString(undefined, dtOptions);
-                        
+                        const statusColors = { 'SUBMITTED': 'badge-warning', 'UNDER_REVIEW': 'badge-warning', 'APPROVED': 'badge-success', 'REJECTED': 'badge-danger' };
                         let tdHtml = `
                             <td><strong style="font-family: var(--font-mono); color: var(--primary);">${resp.registration_id}</strong></td>
-                            <td>${dtString}</td>
-                            <td><span class="badge ${badgeClass}">${resp.status.replace('_', ' ')}</span></td>
+                            <td>${new Date(resp.submitted_at).toLocaleDateString()}</td>
+                            <td><span class="badge ${statusColors[resp.status] || 'badge-warning'}">${resp.status.replace('_', ' ')}</span></td>
                         `;
-                        
-                        questionKeys.forEach(k => {
-                            const val = resp.data ? resp.data[k] : null;
-                            tdHtml += `<td>${formatSafeData(val)}</td>`;
+                        allKeys.slice(0, 4).forEach(k => {
+                            let val = resp.data ? resp.data[k] : '-';
+                            if (typeof val === 'object') val = 'File Attached';
+                            tdHtml += `<td>${val}</td>`;
                         });
-
-                        tdHtml += `<td><button class="btn btn-outline view-btn" data-id="${resp.id}" style="padding: 4px 8px; font-size: 0.75rem;">Manage</button></td>`;
-                        
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = tdHtml;
-                        tbody.appendChild(tr);
+                        tdHtml += `<td><button class="btn btn-outline view-btn" data-id="${resp.id}" style="padding: 4px 8px; font-size: 0.75rem;">Review</button></td>`;
+                        const tr = document.createElement('tr'); tr.innerHTML = tdHtml; tbody.appendChild(tr);
                     });
                 }
-
-                lucide.createIcons();
-                document.querySelectorAll('.view-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => openViewModal(e.target.closest('button').dataset.id));
-                });
+                document.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', (e) => openViewModal(e.target.closest('button').dataset.id)));
             }
 
+            // --- KANBAN LOGIC ---
+            function renderBoard() {
+                const cols = ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'];
+                cols.forEach(status => {
+                    document.getElementById(`col_${status}`).innerHTML = '';
+                    let count = 0;
+                    filteredResponses.filter(r => r.status === status).forEach(resp => {
+                        count++;
+                        
+                        // Extract a preview name/email if possible
+                        const dataKeys = Object.keys(resp.data || {});
+                        const nameKey = dataKeys.find(k => k.toLowerCase().includes('name'));
+                        const emailKey = dataKeys.find(k => k.toLowerCase().includes('email'));
+                        const previewStr = (resp.data && nameKey) ? resp.data[nameKey] : ((resp.data && emailKey) ? resp.data[emailKey] : 'No preview available');
+
+                        const card = document.createElement('div');
+                        card.className = 'kanban-card';
+                        card.draggable = true;
+                        card.dataset.id = resp.id;
+                        card.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--primary); font-weight: 600;">${resp.registration_id}</span>
+                                <span style="font-size: 0.7rem; color: var(--text-muted);">${new Date(resp.submitted_at).toLocaleDateString()}</span>
+                            </div>
+                            <div class="card-title">${resp.forms?.title || 'Unknown Form'}</div>
+                            <div class="card-meta">"${previewStr}"</div>
+                            <button class="btn btn-outline view-btn" data-id="${resp.id}" style="width:100%; padding: 4px; font-size: 0.75rem;">Review</button>
+                        `;
+
+                        // Drag events
+                        card.addEventListener('dragstart', (e) => { card.classList.add('dragging'); e.dataTransfer.setData('id', resp.id); });
+                        card.addEventListener('dragend', () => { card.classList.remove('dragging'); });
+
+                        document.getElementById(`col_${status}`).appendChild(card);
+                    });
+                    document.getElementById(`count_${status}`).textContent = count;
+                });
+                document.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', (e) => openViewModal(e.target.closest('button').dataset.id)));
+            }
+
+            // Kanban Drop Zones
+            document.querySelectorAll('.kanban-column').forEach(col => {
+                col.addEventListener('dragover', (e) => { e.preventDefault(); col.classList.add('drag-over'); });
+                col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+                col.addEventListener('drop', async (e) => {
+                    e.preventDefault(); col.classList.remove('drag-over');
+                    const id = e.dataTransfer.getData('id');
+                    const newStatus = col.dataset.status;
+                    const resp = currentResponses.find(r => r.id === id);
+                    if (resp && resp.status !== newStatus) {
+                        try {
+                            await ResponsesAPI.updateStatus(id, newStatus);
+                            resp.status = newStatus; // Optimistic update
+                            applyFilters(); // Re-render
+                        } catch (err) { alert('Failed to move card: ' + err.message); }
+                    }
+                });
+            });
+
+            // --- MODAL LOGIC ---
             function openViewModal(id) {
                 const resp = currentResponses.find(r => r.id === id);
                 if (!resp) return;
@@ -370,92 +357,51 @@
                 const bodyEl = document.getElementById('modalAnswersBody');
                 bodyEl.innerHTML = '';
                 
-                if (resp.data && Object.keys(resp.data).length > 0) {
+                if (resp.data) {
                     for (const [key, value] of Object.entries(resp.data)) {
                         const label = fieldMap[key] || key.replace('field_', 'Question ');
+                        let displayVal = value;
+                        if (typeof value === 'object' && value.path) {
+                            displayVal = `<a href="${value.path}" target="_blank" style="color:var(--primary);"><i data-lucide="external-link" style="width:14px; vertical-align:middle;"></i> View Attachment</a>`;
+                        } else if (Array.isArray(value)) {
+                            displayVal = value.join(', ');
+                        } else if (typeof value === 'string' && value.startsWith('data:image')) {
+                            displayVal = `<img src="${value}" style="max-height: 100px; border: 1px solid var(--border-light); border-radius: 4px;">`;
+                        }
+                        
                         bodyEl.innerHTML += `
                             <div style="margin-bottom: 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
                                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">${label}</div>
-                                <div style="font-size: 1rem; color: var(--text-main);">${formatSafeData(value)}</div>
+                                <div style="font-size: 1rem; color: var(--text-main);">${displayVal || '-'}</div>
                             </div>
                         `;
                     }
-                    lucide.createIcons();
-                } else {
-                    bodyEl.innerHTML = '<p style="color: var(--text-muted);">No data payload found for this submission.</p>';
                 }
-                viewModal.classList.add('active');
+                lucide.createIcons();
+                document.getElementById('viewModal').classList.add('active');
             }
 
-            document.getElementById('closeViewModalBtn').addEventListener('click', () => viewModal.classList.remove('active'));
+            document.getElementById('closeViewModalBtn').addEventListener('click', () => document.getElementById('viewModal').classList.remove('active'));
 
             document.getElementById('saveStatusBtn').addEventListener('click', async () => {
                 if (!activeResponseId) return;
-                const btn = document.getElementById('saveStatusBtn');
-                btn.disabled = true;
-                btn.textContent = 'Saving...';
+                const btn = document.getElementById('saveStatusBtn'); btn.disabled = true; btn.textContent = 'Saving...';
                 try {
                     await ResponsesAPI.updateStatus(activeResponseId, document.getElementById('statusSelect').value);
-                    viewModal.classList.remove('active');
+                    document.getElementById('viewModal').classList.remove('active');
                     await loadResponses(); 
-                } catch (error) { alert('Failed to update status: ' + error.message); } 
+                } catch (error) { alert('Failed to update: ' + error.message); } 
                 finally { btn.disabled = false; btn.textContent = 'Update'; }
             });
 
-            // EXPORT CSV LOGIC
-            document.getElementById('exportBtn').addEventListener('click', () => {
-                if(filteredResponses.length === 0) return alert("No data to export.");
-
-                // Build a global map of all field IDs to labels across filtered responses
-                const globalFieldMap = {};
-                filteredResponses.forEach(r => {
-                    const localMap = getFieldMap(r.forms?.schema);
-                    Object.assign(globalFieldMap, localMap);
-                });
-
-                const allKeys = new Set();
-                filteredResponses.forEach(r => {
-                    if (r.data) Object.keys(r.data).forEach(k => allKeys.add(k));
-                });
-                const questionKeys = Array.from(allKeys);
-
-                // Map headers using the actual question labels
-                const headerLabels = questionKeys.map(k => globalFieldMap[k] || k.replace('field_', 'Question '));
-                const headers = ['Registration ID', 'Programme', 'Form', 'Status', 'Submitted Date & Time', ...headerLabels];
-                
-                const rows = filteredResponses.map(r => {
-                    const dtOptions = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                    const dtString = new Date(r.submitted_at).toLocaleString(undefined, dtOptions);
-
-                    const baseData = [
-                        r.registration_id,
-                        `"${r.programmes?.name || ''}"`,
-                        `"${r.forms?.title || ''}"`,
-                        r.status,
-                        `"${dtString}"`
-                    ];
-                    
-                    const answersData = questionKeys.map(k => {
-                        let val = r.data ? r.data[k] : '';
-                        if (typeof val === 'object' && val?.type === 'file') val = val.name;
-                        if (Array.isArray(val)) val = val.join(', ');
-                        
-                        if (val === undefined || val === null) return '""';
-                        const safeVal = String(val).replace(/"/g, '""');
-                        return `"${safeVal}"`;
-                    });
-
-                    return [...baseData, ...answersData].join(',');
-                });
-
-                const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `Responses_Export_${new Date().toISOString().split('T')[0]}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+            document.getElementById('deleteResponseBtn').addEventListener('click', async () => {
+                if (!activeResponseId) return;
+                if (!confirm("Permanently delete this response?")) return;
+                try {
+                    await ResponsesAPI.delete(activeResponseId);
+                    document.getElementById('viewModal').classList.remove('active');
+                    await loadResponses();
+                } catch (error) { alert('Failed to delete: ' + error.message); }
             });
 
             loadResponses();

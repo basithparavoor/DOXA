@@ -3,35 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registration Form</title>
+    <title>Form Registration | DOXA</title>
+    
+    <!-- Premium Font: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="variables.css">
-    <link rel="stylesheet" href="public-form.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* ==========================================================================
+           PREMIUM SAAS DESIGN SYSTEM
+           ========================================================================== */
+        :root {
+            /* Fallback colors (will be overridden by form settings if customized) */
+            --primary: #4F46E5; 
+            --primary-hover: #4338ca;
+            --primary-light: rgba(79, 70, 229, 0.1);
+            
+            /* Grays & Surfaces */
+            --bg-body: #F3F4F6;
+            --bg-surface: #FFFFFF;
+            --bg-field: #FAFAFA;
+            --text-main: #111827;
+            --text-muted: #6B7280;
+            --border-light: #E5E7EB;
+            --border-strong: #D1D5DB;
+            
+            /* Shadows & Radii */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            
+            /* Utility */
+            --danger: #EF4444;
+            --success: #10B981;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        
+        body { 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            -webkit-font-smoothing: antialiased; 
+            padding: 60px 20px; 
+            min-height: 100vh;
+        }
+
+        /* ---------------------------------------------------
+           1. FORM CONTAINER & HEADER
+           --------------------------------------------------- */
+        .public-form-container { 
+            background: var(--bg-surface) !important; 
+            box-shadow: var(--shadow-lg); 
+            border-radius: var(--radius-lg) !important; 
+            overflow: hidden; 
+            border: 1px solid rgba(0,0,0,0.05); 
+        }
+
+        .public-form-header { 
+            padding: 56px 48px !important; 
+            position: relative;
+        }
+
+        .public-form-title { 
+            font-weight: 700; 
+            letter-spacing: -0.025em; 
+            font-size: 2.25rem; 
+            margin-bottom: 12px; 
+            line-height: 1.2;
+        }
+
+        .public-form-desc { 
+            font-size: 1.1rem; 
+            opacity: 0.9; 
+            line-height: 1.6; 
+            max-width: 600px;
+        }
+
+        .progress-bar { 
+            background: rgba(255,255,255,0.2) !important; 
+            border-radius: 99px !important; 
+            height: 8px !important; 
+            margin-top: 24px !important;
+        }
+        
+        .progress-fill { 
+            background: #fff !important; 
+            border-radius: 99px !important; 
+        }
+
+        /* ---------------------------------------------------
+           2. FORM BODY & FIELD CARDS
+           --------------------------------------------------- */
+        .public-form-body { 
+            padding: 48px !important; 
+            background: var(--bg-body) !important; 
+        }
+
+        .field-wrapper { 
+            background: var(--bg-surface) !important; 
+            border: 1px solid var(--border-light) !important; 
+            box-shadow: var(--shadow-md) !important; 
+            border-radius: var(--radius-md) !important; 
+            padding: 32px !important; 
+            margin-bottom: 24px !important;
+            transition: var(--transition) !important; 
+        }
+
+        /* Interactive focus state for the entire card */
+        .field-wrapper:focus-within { 
+            border-color: var(--primary) !important; 
+            box-shadow: 0 0 0 4px var(--primary-light), var(--shadow-md) !important; 
+            transform: translateY(-2px);
+        }
+
+        .field-label { 
+            font-weight: 600 !important; 
+            color: var(--text-main); 
+            display: block; 
+            letter-spacing: -0.01em; 
+            font-size: 1.15rem !important;
+        }
+
+        .field-required { color: var(--danger); margin-left: 4px; }
+
+        /* ---------------------------------------------------
+           3. INPUTS, TEXTAREAS, AND SELECTS
+           --------------------------------------------------- */
+        .public-input { 
+            width: 100%; 
+            padding: 14px 16px; 
+            border: 1px solid var(--border-strong); 
+            border-radius: var(--radius-sm); 
+            font-size: 1rem; 
+            color: var(--text-main); 
+            background: var(--bg-surface); 
+            transition: var(--transition); 
+            box-shadow: var(--shadow-sm); 
+            outline: none; 
+        }
+
+        .public-input::placeholder { color: #9CA3AF; }
+
+        .public-input:hover { border-color: #9CA3AF; }
+
+        .public-input:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 4px var(--primary-light); 
+        }
+
+        textarea.public-input { 
+            min-height: 120px; 
+            resize: vertical; 
+            line-height: 1.5; 
+        }
+
+        select.public-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path সীম%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+
+        /* ---------------------------------------------------
+           4. RADIO & CHECKBOX GROUPS
+           --------------------------------------------------- */
+        .radio-label { 
+            display: flex; 
+            align-items: flex-start; 
+            gap: 12px; 
+            padding: 16px; 
+            border: 1px solid var(--border-light); 
+            border-radius: var(--radius-sm); 
+            cursor: pointer; 
+            transition: var(--transition); 
+            background: var(--bg-field); 
+            margin-bottom: 12px; 
+        }
+
+        .radio-label:hover { 
+            background: var(--bg-surface); 
+            border-color: var(--border-strong); 
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Checked state styling logic using CSS :has() if supported, otherwise normal styling */
+        .radio-label:has(input:checked) {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .radio-label input[type="radio"], .radio-label input[type="checkbox"] { 
+            width: 20px; 
+            height: 20px; 
+            accent-color: var(--primary); 
+            margin-top: 2px; 
+            cursor: pointer; 
+        }
+
+        .radio-label span { 
+            font-size: 1rem; 
+            color: var(--text-main); 
+            line-height: 1.4; 
+            font-weight: 500;
+        }
+
+        /* ---------------------------------------------------
+           5. BUTTONS & FOOTER
+           --------------------------------------------------- */
+        .form-footer {
+            padding: 32px 48px !important;
+            background: var(--bg-surface) !important;
+            border-top: 1px solid var(--border-light) !important;
+        }
+
+        .btn { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+            padding: 14px 28px; 
+            font-weight: 600; 
+            font-size: 1.05rem; 
+            border-radius: var(--radius-sm); 
+            cursor: pointer; 
+            transition: var(--transition); 
+            border: none; 
+        }
+
+        .btn-primary { 
+            background: var(--primary); 
+            color: #fff; 
+            box-shadow: 0 4px 6px -1px var(--primary-light); 
+        }
+
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 12px -2px rgba(0,0,0,0.15); 
+            filter: brightness(1.05); 
+        }
+
+        .btn-outline { 
+            background: #fff; 
+            border: 1px solid var(--border-strong); 
+            color: var(--text-main); 
+            box-shadow: var(--shadow-sm); 
+        }
+
+        .btn-outline:hover { 
+            background: var(--bg-body); 
+            border-color: var(--text-muted); 
+        }
+
+        /* ---------------------------------------------------
+           6. ADVANCED FIELDS (Matrix, Rank, Signature)
+           --------------------------------------------------- */
+        .signature-pad-wrapper { 
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02); 
+            background: var(--bg-field) !important;
+            border-color: var(--border-strong) !important;
+        }
+
+        table { 
+            border-collapse: separate; 
+            border-spacing: 0; 
+            width: 100%; 
+            border: 1px solid var(--border-light); 
+            border-radius: var(--radius-sm); 
+            overflow: hidden; 
+        }
+
+        th { 
+            background: var(--bg-field) !important; 
+            font-weight: 600; 
+            color: var(--text-muted) !important; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em; 
+            font-size: 0.75rem !important; 
+            padding: 16px !important; 
+            border-bottom: 1px solid var(--border-light); 
+        }
+
+        td { 
+            padding: 16px !important; 
+            border-bottom: 1px solid var(--border-light); 
+            background: var(--bg-surface); 
+            font-size: 0.95rem;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        td:first-child { font-weight: 500; color: var(--text-main); }
+
+        .rank-item {
+            transition: var(--transition);
+        }
+        .rank-item:hover {
+            border-color: var(--primary) !important;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ---------------------------------------------------
+           7. LOADING SCREEN (Premium Skeleton/Pulse)
+           --------------------------------------------------- */
+        .premium-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 50vh;
+            color: var(--text-muted);
+        }
+        
+        .spinner-ring {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 24px;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* ---------------------------------------------------
+           8. MOBILE RESPONSIVENESS
+           --------------------------------------------------- */
+        @media (max-width: 640px) {
+            body { padding: 0; background: var(--bg-surface); }
+            .public-form-container { border-radius: 0 !important; border: none; box-shadow: none; }
+            .public-form-header { padding: 40px 24px !important; }
+            .public-form-title { font-size: 1.75rem; }
+            .public-form-body { padding: 24px 16px !important; background: var(--bg-surface) !important; }
+            .field-wrapper { 
+                padding: 24px 20px !important; 
+                border: 1px solid var(--border-light) !important; 
+                box-shadow: none !important; 
+                margin-bottom: 16px !important; 
+                background: var(--bg-field) !important;
+            }
+            .form-footer { padding: 24px 16px !important; flex-direction: column-reverse; }
+            .form-footer button { width: 100%; margin-bottom: 12px; }
+        }
+    </style>
 </head>
 <body>
-    
-    <!-- Render Container -->
-    <div id="formContainer" style="width: 100%; display: flex; justify-content: center;">
-        <div style="padding: 100px; color: var(--text-muted);">Loading form...</div>
+
+    <!-- Target Div for the Engine -->
+    <div id="formContainer">
+        <!-- Premium Loading State -->
+        <div class="premium-loader">
+            <div class="spinner-ring"></div>
+            <h2 style="color: var(--text-main); font-weight: 600; font-size: 1.25rem; margin-bottom: 8px;">Loading Form</h2>
+            <p style="font-size: 0.95rem;">Preparing secure environment...</p>
+        </div>
     </div>
 
+    <!-- Initialize the Form Renderer Engine -->
     <script type="module">
         import { FormRenderer } from './form-renderer.js';
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            // Get the form slug from the URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const slug = urlParams.get('slug');
-            
-            if (!slug) {
-                document.getElementById('formContainer').innerHTML = 
-                    `<div style="padding: 40px; color: var(--danger);">Invalid form link. No slug provided.</div>`;
-                return;
-            }
 
-            // Initialize the renderer
-            new FormRenderer('formContainer', slug);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const formSlug = urlParams.get('slug');
+
+            if (formSlug) {
+                new FormRenderer('formContainer', formSlug);
+            } else {
+                document.getElementById('formContainer').innerHTML = `
+                    <div style="text-align:center; padding: 100px 20px; color: var(--danger);">
+                        <i data-lucide="alert-triangle" style="width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.8;"></i>
+                        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 8px;">Form Not Found</h2>
+                        <p style="color: var(--text-muted);">No valid form slug was provided in the URL.</p>
+                    </div>`;
+                if (window.lucide) lucide.createIcons();
+            }
         });
     </script>
 </body>

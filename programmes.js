@@ -1,5 +1,5 @@
 // programmes.js
-import { supabase } from '../config.js';
+import { supabase } from './config.js';
 
 export const ProgrammesAPI = {
     async getAll() {

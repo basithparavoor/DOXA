@@ -1,5 +1,5 @@
 // settings.js
-import { supabase } from '../config.js';
+import { supabase } from './config.js';
 
 export const SettingsAPI = {
     async getSettings() {

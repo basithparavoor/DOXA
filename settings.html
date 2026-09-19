@@ -10,210 +10,221 @@
     <link rel="stylesheet" href="components.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        .settings-layout { display: flex; gap: 32px; margin-top: 24px; }
-        .settings-nav { width: 240px; display: flex; flex-direction: column; gap: 8px; }
-        .settings-tab { padding: 10px 16px; border-radius: var(--radius-md); color: var(--text-muted); cursor: pointer; font-weight: 500; transition: all var(--transition-fast); }
-        .settings-tab:hover { background: var(--bg-surface-hover); color: var(--text-main); }
-        .settings-tab.active { background: var(--bg-surface); color: var(--primary); box-shadow: var(--shadow-sm); }
-        .settings-panel { flex: 1; background: var(--bg-surface); padding: 32px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); display: none; }
-        .settings-panel.active { display: block; }
+        .settings-container { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 12px; border: 1px solid var(--border-light); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); overflow: hidden; }
+        .settings-header { padding: 32px; border-bottom: 1px solid var(--border-light); background: #fafafa; }
+        .settings-header h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.025em; }
+        .settings-header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 6px; }
+        
+        .settings-tabs { display: flex; gap: 32px; padding: 0 32px; border-bottom: 1px solid var(--border-light); background: #fff; }
+        .settings-tab { padding: 16px 0; color: var(--text-muted); font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s ease; font-size: 0.95rem; }
+        .settings-tab:hover { color: var(--text-main); }
+        .settings-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+        
+        .settings-body { padding: 32px; min-height: 450px; background: #fff; }
+        .settings-section { display: none; animation: fadeIn 0.4s ease; }
+        .settings-section.active { display: block; }
+        .settings-section-title { margin-bottom: 24px; font-size: 1.15rem; font-weight: 600; color: var(--text-main); letter-spacing: -0.01em; }
+        
+        .settings-footer { padding: 24px 32px; border-top: 1px solid var(--border-light); background: #fafafa; display: flex; justify-content: flex-end; }
+        
+        .avatar-upload { display: flex; align-items: center; gap: 24px; margin-bottom: 32px; padding: 24px; background: var(--bg-surface-hover); border-radius: 8px; border: 1px dashed var(--border-strong); }
+        .avatar-preview { width: 80px; height: 80px; border-radius: 12px; background: #fff; border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: var(--shadow-sm); }
+        .avatar-preview img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+        
+        .integration-card { background: #fff; border: 1px solid var(--border-light); border-radius: 8px; padding: 24px; margin-bottom: 16px; display: flex; gap: 20px; align-items: flex-start; transition: box-shadow 0.2s ease, border-color 0.2s ease; }
+        .integration-card:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        .integration-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
     <div class="app-container">
-      <!-- Sidebar -->
-        <div class="sidebar-overlay" id="mobileSidebarOverlay"></div>
+        <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <!-- Replaced Lucide icon with default logo.png -->
-                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
-                <span>DOXA ADMIN</span>
-            </div>
+            <div class="sidebar-header"><img id="globalSidebarLogo" src="logo.png" alt="Logo" style="height: 28px; object-fit: contain;"><span id="globalSidebarName">DOXA ADMIN</span></div>
             <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-item">
-                    <i data-lucide="layout-dashboard"></i> Dashboard
-                </a>
-                <a href="programmes.html" class="nav-item">
-                    <i data-lucide="folder-kanban"></i> Programmes
-                </a>
-                <a href="forms.html" class="nav-item">
-                    <i data-lucide="file-text"></i> Forms
-                </a>
-                <a href="responses.html" class="nav-item">
-                    <i data-lucide="inbox"></i> Responses
-                </a>
-                <a href="files.html" class="nav-item">
-                    <i data-lucide="folder-open"></i> File Manager
-                </a>
-                <a href="analytics.html" class="nav-item">
-                    <i data-lucide="bar-chart-2"></i> Analytics
-                </a>
-                
+                <a href="dashboard.html" class="nav-item"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                <a href="programmes.html" class="nav-item"><i data-lucide="folder-kanban"></i> Programmes</a>
+                <a href="forms.html" class="nav-item"><i data-lucide="file-text"></i> Forms</a>
+                <a href="responses.html" class="nav-item"><i data-lucide="inbox"></i> Responses</a>
+                <a href="files.html" class="nav-item"><i data-lucide="folder-open"></i> File Manager</a>
+                <a href="analytics.html" class="nav-item"><i data-lucide="bar-chart-2"></i> Analytics</a>
                 <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
-                
-                <a href="staff.html" class="nav-item">
-                    <i data-lucide="users"></i> Staff
-                </a>
-                <a href="settings.html" class="nav-item">
-                    <i data-lucide="settings"></i> Settings
-                </a>
+                <a href="staff.html" class="nav-item"><i data-lucide="users"></i> Staff</a>
+                <a href="settings.html" class="nav-item active"><i data-lucide="settings"></i> Settings</a>
             </nav>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="top-header">
-                <!-- NEW: Hamburger Button -->
-                <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
-                    <i data-lucide="menu"></i>
-                </button>
-                <div class="search-bar">
-                    <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
-                    <input type="text" placeholder="Search settings...">
-                </div>
-                <div class="header-actions">
-                    <div class="user-profile">
-                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">AD</div>
-                    </div>
-                </div>
-            </header>
+            <header class="top-header"><div class="search-bar"></div></header>
 
             <div class="page-content">
-                <div class="page-header">
-                    <div class="page-title">
-                        <h1>Organization Settings</h1>
-                    </div>
-                </div>
+                <div class="page-header"><div class="page-title"><h1>Platform Settings</h1></div></div>
 
-                <div class="settings-layout">
-                    <!-- Vertical Tabs -->
-                    <div class="settings-nav">
-                        <div class="settings-tab active" data-target="panel-general">General & Branding</div>
-                        <div class="settings-tab" data-target="panel-security">Security & Access</div>
-                        <div class="settings-tab" data-target="panel-integrations">API & Integrations</div>
+                <div class="settings-container">
+                    <div class="settings-header">
+                        <h2>Configuration</h2>
+                        <p>Manage your organization's global preferences, security, and integrations.</p>
                     </div>
 
-                    <!-- General Settings Panel -->
-                    <div class="settings-panel active" id="panel-general">
-                        <h2 style="font-size: 1.25rem; margin-bottom: 24px;">General Settings</h2>
-                        
-                        <div class="form-group" style="max-width: 400px;">
-                            <label>Organization Name</label>
-                            <input type="text" id="orgName" class="form-control" placeholder="Enter organization name">
-                        </div>
-                        
-                        <div class="form-group" style="max-width: 400px;">
-                            <label>Support Email Address</label>
-                            <input type="email" id="supportEmail" class="form-control" placeholder="support@organization.com">
-                        </div>
+                    <div class="settings-tabs">
+                        <div class="settings-tab active" data-target="section-general">General</div>
+                        <div class="settings-tab" data-target="section-integrations">Integrations</div>
+                        <div class="settings-tab" data-target="section-security">Security</div>
+                    </div>
 
-                        <div style="height: 1px; background: var(--border-light); margin: 32px 0;"></div>
+                    <div class="settings-body">
+                        <!-- General Settings -->
+                        <div class="settings-section active" id="section-general">
+                            <h3 class="settings-section-title">Organization Identity</h3>
+                            
+                            <div class="avatar-upload">
+                                <div class="avatar-preview" id="logoPreviewContainer"><i data-lucide="image" style="color: var(--text-light); width: 32px; height: 32px;"></i></div>
+                                <div>
+                                    <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 4px;">Global Platform Logo</h4>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Appears on the sidebar and default forms. Recommended size: 256x256px.</p>
+                                    <label class="btn btn-outline" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px;"><i data-lucide="upload"></i> Upload Logo<input type="file" id="logoUploadInput" accept="image/png, image/jpeg, image/webp" style="display: none;"></label>
+                                    <input type="hidden" id="logoUrlInput">
+                                </div>
+                            </div>
 
-                        <h2 style="font-size: 1.25rem; margin-bottom: 24px;">Global Branding</h2>
-                        
-                        <div class="form-group" style="max-width: 200px;">
-                            <label>Primary Brand Color</label>
-                            <div style="display: flex; gap: 12px; align-items: center;">
-                                <input type="color" id="primaryColor" value="#4F46E5" style="border: none; width: 40px; height: 40px; border-radius: 4px; cursor: pointer;">
-                                <span id="colorHexText" style="font-family: var(--font-mono); color: var(--text-muted);">#4F46E5</span>
+                            <div class="form-group" style="max-width: 400px;">
+                                <label style="font-weight: 500;">Organization Name</label>
+                                <input type="text" id="orgNameInput" class="form-control" placeholder="e.g., DOXA Foundation" style="font-size: 1rem; padding: 10px 12px;">
                             </div>
                         </div>
 
-                        <div style="margin-top: 40px;">
-                            <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+                        <!-- Integrations Settings -->
+                        <div class="settings-section" id="section-integrations">
+                            <h3 class="settings-section-title">Connected Apps & Webhooks</h3>
+                            
+                            <div class="integration-card">
+                                <div class="integration-icon" style="color: #FF4A00; background: #FFF0E6;"><i data-lucide="webhook" style="width: 24px; height: 24px;"></i></div>
+                                <div style="flex: 1;">
+                                    <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 4px;">Zapier / Make.com Webhook</h4>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Push form submissions instantly to external CRMs or Google Sheets.</p>
+                                    <input type="url" id="zapierUrlInput" class="form-control" placeholder="https://hooks.zapier.com/hooks/catch/... ">
+                                </div>
+                            </div>
+
+                            <div class="integration-card">
+                                <div class="integration-icon" style="color: #635BFF; background: #F0F0FF;"><i data-lucide="credit-card" style="width: 24px; height: 24px;"></i></div>
+                                <div style="flex: 1;">
+                                    <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 4px;">Stripe Payments</h4>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Enable the "Payment" field type to collect fees securely via Edge Functions.</p>
+                                    <input type="password" id="stripeKeyInput" class="form-control" placeholder="pk_live_... or pk_test_...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Settings -->
+                        <div class="settings-section" id="section-security">
+                            <h3 class="settings-section-title">Change Password</h3>
+                            <div class="form-group" style="max-width: 400px;">
+                                <label style="font-weight: 500;">New Password</label>
+                                <input type="password" id="newPasswordInput" class="form-control" placeholder="Enter new password" style="font-size: 1rem; padding: 10px 12px;">
+                            </div>
+                            <div class="form-group" style="max-width: 400px; margin-top: 16px;">
+                                <label style="font-weight: 500;">Confirm New Password</label>
+                                <input type="password" id="confirmPasswordInput" class="form-control" placeholder="Re-type new password" style="font-size: 1rem; padding: 10px 12px;">
+                            </div>
+                            <button class="btn btn-outline" id="updatePasswordBtn" style="margin-top: 24px;"><i data-lucide="shield-check"></i> Update Password</button>
                         </div>
                     </div>
 
-                    <!-- Security Panel (Placeholder) -->
-                    <div class="settings-panel" id="panel-security">
-                        <h2 style="font-size: 1.25rem; margin-bottom: 24px;">Security Settings</h2>
-                        <p style="color: var(--text-muted);">Form privacy and access defaults can be configured here in the future.</p>
+                    <div class="settings-footer">
+                        <button class="btn btn-primary" id="saveSettingsBtn" style="padding: 12px 32px; font-size: 1rem; font-weight: 600;">Save Changes</button>
                     </div>
-
-                    <!-- Integrations Panel (Placeholder) -->
-                    <div class="settings-panel" id="panel-integrations">
-                        <h2 style="font-size: 1.25rem; margin-bottom: 24px;">API & Webhooks</h2>
-                        <p style="color: var(--text-muted);">Generate API keys to connect with external services.</p>
-                    </div>
-
                 </div>
             </div>
         </main>
     </div>
 
     <script type="module">
-        import { SettingsAPI } from './settings.js';
+        import { supabase } from './config.js';
 
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
+            let settingsId = null;
 
-            // 1. Tab Switching Logic
-            const tabs = document.querySelectorAll('.settings-tab');
-            const panels = document.querySelectorAll('.settings-panel');
-
-            tabs.forEach(tab => {
+            document.querySelectorAll('.settings-tab').forEach(tab => {
                 tab.addEventListener('click', () => {
-                    // Remove active from all tabs & panels
-                    tabs.forEach(t => t.classList.remove('active'));
-                    panels.forEach(p => p.classList.remove('active'));
-                    
-                    // Add active to clicked tab & target panel
+                    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
                     tab.classList.add('active');
                     document.getElementById(tab.dataset.target).classList.add('active');
                 });
             });
 
-            // 2. Color Picker Hex Text Update
-            const colorInput = document.getElementById('primaryColor');
-            const colorText = document.getElementById('colorHexText');
-            
-            colorInput.addEventListener('input', (e) => {
-                colorText.textContent = e.target.value.toUpperCase();
-            });
-
-            // 3. Load Data from Supabase
-            try {
-                const settings = await SettingsAPI.getSettings();
-                document.getElementById('orgName').value = settings.org_name || '';
-                document.getElementById('supportEmail').value = settings.support_email || '';
-                
-                if (settings.primary_color) {
-                    colorInput.value = settings.primary_color;
-                    colorText.textContent = settings.primary_color.toUpperCase();
+            async function loadSettings() {
+                const { data, error } = await supabase.from('organization_settings').select('*').limit(1).single();
+                if (data) {
+                    settingsId = data.id;
+                    document.getElementById('orgNameInput').value = data.org_name || '';
+                    document.getElementById('zapierUrlInput').value = data.zapier_webhook_url || '';
+                    document.getElementById('stripeKeyInput').value = data.stripe_public_key || '';
+                    if (data.global_logo_url) {
+                        document.getElementById('logoUrlInput').value = data.global_logo_url;
+                        document.getElementById('logoPreviewContainer').innerHTML = `<img src="${data.global_logo_url}" alt="Logo">`;
+                        document.getElementById('globalSidebarLogo').src = data.global_logo_url;
+                        if (data.org_name) document.getElementById('globalSidebarName').textContent = data.org_name;
+                    }
                 }
-            } catch (error) {
-                console.error("Failed to load settings:", error);
             }
 
-            // 4. Save Data to Supabase
-            document.getElementById('saveSettingsBtn').addEventListener('click', async (e) => {
-                const btn = e.target;
-                btn.textContent = 'Saving...';
-                btn.disabled = true;
-                
+            document.getElementById('logoUploadInput').addEventListener('change', async (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const previewContainer = document.getElementById('logoPreviewContainer');
+                previewContainer.innerHTML = '<i data-lucide="loader" style="animation: spin 1s linear infinite;"></i>'; lucide.createIcons();
                 try {
-                    await SettingsAPI.updateSettings({
-                        org_name: document.getElementById('orgName').value,
-                        support_email: document.getElementById('supportEmail').value,
-                        primary_color: document.getElementById('primaryColor').value
-                    });
-
-                    // Success state
-                    btn.textContent = 'Saved Successfully';
-                    btn.classList.replace('btn-primary', 'btn-success');
-                    
-                    setTimeout(() => {
-                        btn.textContent = 'Save Settings';
-                        btn.classList.replace('btn-success', 'btn-primary');
-                        btn.disabled = false;
-                    }, 2000);
-                } catch (error) {
-                    alert("Error saving settings: " + error.message);
-                    btn.textContent = 'Save Settings';
-                    btn.disabled = false;
-                }
+                    const fileExt = file.name.split('.').pop(); const fileName = `logo_${Date.now()}.${fileExt}`;
+                    const { error } = await supabase.storage.from('form_assets').upload(`platform/${fileName}`, file);
+                    if (error) throw error;
+                    const { data } = supabase.storage.from('form_assets').getPublicUrl(`platform/${fileName}`);
+                    document.getElementById('logoUrlInput').value = data.publicUrl;
+                    previewContainer.innerHTML = `<img src="${data.publicUrl}" alt="Logo">`;
+                } catch (error) { alert('Failed to upload logo: ' + error.message); previewContainer.innerHTML = '<i data-lucide="image" style="color: var(--text-light); width: 32px; height: 32px;"></i>'; lucide.createIcons(); }
             });
+
+            document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
+                const btn = document.getElementById('saveSettingsBtn');
+                btn.innerHTML = '<i data-lucide="loader" style="animation: spin 1s linear infinite; margin-right:8px;"></i> Saving...'; btn.disabled = true;
+                const payload = {
+                    org_name: document.getElementById('orgNameInput').value,
+                    global_logo_url: document.getElementById('logoUrlInput').value,
+                    zapier_webhook_url: document.getElementById('zapierUrlInput').value,
+                    stripe_public_key: document.getElementById('stripeKeyInput').value,
+                    updated_at: new Date().toISOString()
+                };
+                try {
+                    const res = settingsId ? await supabase.from('organization_settings').update(payload).eq('id', settingsId) : await supabase.from('organization_settings').insert([payload]);
+                    if (res.error) throw res.error;
+                    if (payload.global_logo_url) document.getElementById('globalSidebarLogo').src = payload.global_logo_url;
+                    if (payload.org_name) document.getElementById('globalSidebarName').textContent = payload.org_name;
+                    alert('Settings saved successfully!');
+                } catch (error) { alert('Error saving settings: ' + error.message); } 
+                finally { btn.innerHTML = 'Save Changes'; btn.disabled = false; }
+            });
+
+            document.getElementById('updatePasswordBtn').addEventListener('click', async () => {
+                const newPass = document.getElementById('newPasswordInput').value; const confirmPass = document.getElementById('confirmPasswordInput').value;
+                if (!newPass || newPass.length < 6) return alert('Password must be at least 6 characters.');
+                if (newPass !== confirmPass) return alert('Passwords do not match.');
+                const btn = document.getElementById('updatePasswordBtn'); btn.innerHTML = '<i data-lucide="loader" style="animation: spin 1s linear infinite;"></i> Updating...'; btn.disabled = true;
+                try {
+                    const { error } = await supabase.auth.updateUser({ password: newPass });
+                    if (error) throw error;
+                    alert('Password updated successfully.');
+                    document.getElementById('newPasswordInput').value = ''; document.getElementById('confirmPasswordInput').value = '';
+                } catch (error) { alert('Failed to update password: ' + error.message); } 
+                finally { btn.innerHTML = '<i data-lucide="shield-check"></i> Update Password'; btn.disabled = false; lucide.createIcons(); }
+            });
+
+            loadSettings();
         });
     </script>
+    <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
 </body>
 </html>

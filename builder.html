@@ -15,14 +15,11 @@
     <div class="app-container" style="flex-direction: column;">
         <header class="top-header" style="border-bottom: 1px solid var(--border-light); z-index: 10;">
             <div style="display:flex; align-items:center; gap:16px;">
-                <button class="icon-btn" onclick="window.location.href='forms.html'" title="Back to Forms">
-                    <i data-lucide="arrow-left"></i>
-                </button>
-                <div style="font-weight:600; color:var(--text-main);">
-                    Form Builder <span class="badge badge-warning" style="margin-left:8px;" id="statusBadge">Draft</span>
-                </div>
+                <button class="icon-btn" onclick="window.location.href='forms.html'" title="Back to Forms"><i data-lucide="arrow-left"></i></button>
+                <div style="font-weight:600; color:var(--text-main);">Form Builder <span class="badge badge-warning" style="margin-left:8px;" id="statusBadge">Draft</span></div>
             </div>
             <div class="header-actions">
+                <button class="btn btn-outline" id="versionHistoryBtn"><i data-lucide="history"></i> History</button>
                 <button class="btn btn-outline" id="previewBtn"><i data-lucide="eye"></i> Preview</button>
                 <button class="btn btn-outline" id="shareBtn"><i data-lucide="share-2"></i> Share</button>
                 <button class="btn btn-primary" id="saveBtn"><i data-lucide="save"></i> Save Form</button>
@@ -30,14 +27,11 @@
         </header>
 
         <div class="builder-container">
-            <!-- Left: Fields Library -->
             <aside class="builder-sidebar-left">
                 <div class="panel-header">Form Elements</div>
                 <div class="field-library">
                     <div class="field-category">Layout</div>
-                    <div class="draggable-item" draggable="true" data-type="section">
-                        <i data-lucide="layers"></i> Section Break
-                    </div>
+                    <div class="draggable-item" draggable="true" data-type="section"><i data-lucide="layers"></i> Section Break</div>
 
                     <div class="field-category">Standard Fields</div>
                     <div class="draggable-item" draggable="true" data-type="short_text"><i data-lucide="type"></i> Short Text</div>
@@ -47,18 +41,20 @@
                     <div class="draggable-item" draggable="true" data-type="number"><i data-lucide="hash"></i> Number</div>
                     
                     <div class="field-category">Multiple Choice</div>
-                    <div class="draggable-item" draggable="true" data-type="radio"><i data-lucide="list"></i> Single Choice (Radio)</div>
-                    <div class="draggable-item" draggable="true" data-type="checkbox"><i data-lucide="check-square"></i> Multiple Choice (Checkbox)</div>
+                    <div class="draggable-item" draggable="true" data-type="radio"><i data-lucide="list"></i> Single Choice</div>
+                    <div class="draggable-item" draggable="true" data-type="checkbox"><i data-lucide="check-square"></i> Multiple Choice</div>
                     <div class="draggable-item" draggable="true" data-type="select"><i data-lucide="chevron-down-square"></i> Dropdown</div>
                     
                     <div class="field-category">Advanced</div>
+                    <div class="draggable-item" draggable="true" data-type="payment"><i data-lucide="credit-card"></i> Payment Collection</div>
+                    <div class="draggable-item" draggable="true" data-type="rank"><i data-lucide="list-ordered"></i> Drag-to-Rank</div>
+                    <div class="draggable-item" draggable="true" data-type="matrix"><i data-lucide="grid"></i> Matrix / Grid</div>
                     <div class="draggable-item" draggable="true" data-type="file"><i data-lucide="upload-cloud"></i> File Upload</div>
                     <div class="draggable-item" draggable="true" data-type="date"><i data-lucide="calendar"></i> Date</div>
                     <div class="draggable-item" draggable="true" data-type="time"><i data-lucide="clock"></i> Time</div>
                 </div>
             </aside>
 
-            <!-- Center: Canvas -->
             <main class="builder-canvas">
                 <div class="form-paper" id="formPaper">
                     <img id="canvasHeaderImage" class="canvas-header-image" src="" alt="Header">
@@ -67,75 +63,43 @@
                         <input type="text" id="formTitleInput" class="form-title-input" value="Untitled Form" placeholder="Form Title">
                         <textarea id="formDescInput" class="form-desc-input" placeholder="Enter a description for this form..."></textarea>
                     </div>
-                    <div id="canvasDropzone" class="dropzone">
-                        <!-- Fields injected via JS -->
-                    </div>
+                    <div id="canvasDropzone" class="dropzone"></div>
                 </div>
             </main>
 
-            <!-- Right: Settings & Theme -->
             <aside class="builder-sidebar-right">
                 <div class="sidebar-tabs">
                     <div class="sidebar-tab active" data-target="propertiesPanel">Properties</div>
                     <div class="sidebar-tab" data-target="themePanel">Design</div>
                 </div>
-                
                 <div class="tab-content active" id="propertiesPanel"></div>
-
                 <div class="tab-content" id="themePanel">
                     <div class="form-group">
                         <label>Custom Form Logo</label>
                         <div style="display: flex; gap: 8px;">
                             <input type="url" id="themeFormLogo" class="form-control" placeholder="Image URL" style="flex: 1;">
-                            <label class="btn btn-outline" style="cursor: pointer; padding: 10px; margin: 0; min-width: 44px; display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="upload-cloud"></i>
-                                <input type="file" id="uploadFormLogo" accept="image/png, image/jpeg, image/webp" style="display: none;">
-                            </label>
+                            <label class="btn btn-outline" style="cursor: pointer; padding: 10px; margin: 0; min-width: 44px; display: flex; align-items: center; justify-content: center;"><i data-lucide="upload-cloud"></i><input type="file" id="uploadFormLogo" accept="image/png, image/jpeg, image/webp" style="display: none;"></label>
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Header Cover Image</label>
                         <div style="display: flex; gap: 8px;">
                             <input type="url" id="themeHeaderImage" class="form-control" placeholder="Image URL" style="flex: 1;">
-                            <label class="btn btn-outline" style="cursor: pointer; padding: 10px; margin: 0; min-width: 44px; display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="upload-cloud"></i>
-                                <input type="file" id="uploadHeaderImage" accept="image/png, image/jpeg, image/webp" style="display: none;">
-                            </label>
+                            <label class="btn btn-outline" style="cursor: pointer; padding: 10px; margin: 0; min-width: 44px; display: flex; align-items: center; justify-content: center;"><i data-lucide="upload-cloud"></i><input type="file" id="uploadHeaderImage" accept="image/png, image/jpeg, image/webp" style="display: none;"></label>
                         </div>
                     </div>
                     <div style="display: flex; gap: 12px; margin-top: 16px;">
-                        <div class="form-group" style="flex: 1;">
-                            <label>Brand Color</label>
-                            <input type="color" id="themePrimaryColor" class="form-control" style="height: 40px; padding: 2px;">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label>App Background</label>
-                            <input type="color" id="themeBgColor" class="form-control" style="height: 40px; padding: 2px;">
-                        </div>
+                        <div class="form-group" style="flex: 1;"><label>Brand Color</label><input type="color" id="themePrimaryColor" class="form-control" style="height: 40px; padding: 2px;"></div>
+                        <div class="form-group" style="flex: 1;"><label>App Background</label><input type="color" id="themeBgColor" class="form-control" style="height: 40px; padding: 2px;"></div>
                     </div>
-                    <div style="display: flex; gap: 12px;">
-                        <div class="form-group" style="flex: 1;">
-                            <label>Field Background</label>
-                            <input type="color" id="themeFieldBgColor" class="form-control" style="height: 40px; padding: 2px;">
-                        </div>
-                    </div>
+                    <div style="display: flex; gap: 12px;"><div class="form-group" style="flex: 1;"><label>Field Background</label><input type="color" id="themeFieldBgColor" class="form-control" style="height: 40px; padding: 2px;"></div></div>
                     <div class="form-group" style="margin-top: 16px;">
                         <label>Typography</label>
-                        <select id="themeFont" class="form-control">
-                            <option value="Inter">Inter (Modern)</option>
-                            <option value="Roboto">Roboto (Clean)</option>
-                            <option value="Montserrat">Montserrat (Bold)</option>
-                            <option value="Lora">Lora (Serif / Classic)</option>
-                        </select>
+                        <select id="themeFont" class="form-control"><option value="Inter">Inter (Modern)</option><option value="Roboto">Roboto (Clean)</option><option value="Montserrat">Montserrat (Bold)</option><option value="Lora">Lora (Serif / Classic)</option></select>
                     </div>
                     <div class="form-group" style="margin-top: 16px;">
                         <label>Form Corner Radius</label>
-                        <select id="themeBorderRadius" class="form-control">
-                            <option value="0px">Sharp (0px)</option>
-                            <option value="8px">Rounded (8px)</option>
-                            <option value="16px">Smooth (16px)</option>
-                            <option value="24px">Pill-like (24px)</option>
-                        </select>
+                        <select id="themeBorderRadius" class="form-control"><option value="0px">Sharp (0px)</option><option value="8px">Rounded (8px)</option><option value="16px">Smooth (16px)</option><option value="24px">Pill-like (24px)</option></select>
                     </div>
                     <div class="form-group" style="margin-top: 16px;">
                         <label>Global Form Alignment</label>
@@ -150,24 +114,11 @@
         </div>
     </div>
 
-    <!-- Share Modal -->
-    <div class="modal-overlay" id="shareModal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h2>Share Form</h2>
-                <button class="modal-close" id="closeShareBtn"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body">
-                <p style="color: var(--text-muted); margin-bottom: 16px;">Share this link to start collecting responses.</p>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="shareUrlInput" class="form-control" readonly>
-                    <button class="btn btn-primary" id="copyShareBtn">Copy</button>
-                </div>
-                <div id="shareStatusText" style="color: var(--success); font-size: 0.875rem; margin-top: 8px; display: none;">Copied to clipboard!</div>
-            </div>
-        </div>
-    </div>
+    <!-- Modals -->
+    <div class="modal-overlay" id="shareModal"><div class="modal-card"><div class="modal-header"><h2>Share Form</h2><button class="modal-close" id="closeShareBtn"><i data-lucide="x"></i></button></div><div class="modal-body"><p style="color: var(--text-muted); margin-bottom: 16px;">Share this link to start collecting responses.</p><div style="display: flex; gap: 8px;"><input type="text" id="shareUrlInput" class="form-control" readonly><button class="btn btn-primary" id="copyShareBtn">Copy</button></div><div id="shareStatusText" style="color: var(--success); font-size: 0.875rem; margin-top: 8px; display: none;">Copied to clipboard!</div></div></div></div>
+    <div class="modal-overlay" id="historyModal"><div class="modal-card" style="max-width: 500px;"><div class="modal-header"><h2>Version History</h2><button class="modal-close" id="closeHistoryBtn"><i data-lucide="x"></i></button></div><div class="modal-body"><p style="color: var(--text-muted); margin-bottom: 16px;">Restore previous versions of this form.</p><div id="historyList" style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto;"></div></div></div></div>
 
+    <style>@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }</style>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script type="module">
         import { supabase } from './config.js';
@@ -175,79 +126,55 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
-            
             const urlParams = new URLSearchParams(window.location.search);
-            const formId = urlParams.get('id');
+            let formId = urlParams.get('id');
             const progId = urlParams.get('prog_id');
-
             const builder = new FormBuilder(formId);
             let currentSlug = '';
 
-            setTimeout(async () => {
-                if (formId) {
-                    const { data } = await supabase.from('forms').select('slug').eq('id', formId).single();
-                    if (data) currentSlug = data.slug;
-                }
-            }, 1000);
+            if (formId) { const { data } = await supabase.from('forms').select('slug').eq('id', formId).single(); if (data) currentSlug = data.slug; }
 
             document.getElementById('saveBtn').addEventListener('click', async () => {
-                const btn = document.getElementById('saveBtn');
-                btn.innerHTML = '<i data-lucide="loader"></i> Saving...';
-                btn.disabled = true;
-
+                const btn = document.getElementById('saveBtn'); btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Saving...'; btn.disabled = true;
                 try {
                     const finalSchema = builder.getSchema();
-                    const payload = {
-                        title: finalSchema.title,
-                        description: finalSchema.description,
-                        schema: finalSchema,
-                        status: 'PUBLISHED'
-                    };
-
+                    const payload = { title: finalSchema.title, description: finalSchema.description, schema: finalSchema, status: 'PUBLISHED' };
                     if (formId) {
                         await supabase.from('forms').update(payload).eq('id', formId);
+                        await supabase.from('form_versions').insert([{ form_id: formId, schema: finalSchema, version_note: 'Manual Update' }]);
                     } else {
-                        payload.slug = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random()*1000);
-                        payload.programme_id = progId; 
+                        payload.slug = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random()*1000); payload.programme_id = progId; 
                         const { data } = await supabase.from('forms').insert([payload]).select().single();
-                        currentSlug = data.slug;
-                        window.history.replaceState({}, '', `?id=${data.id}`);
+                        currentSlug = data.slug; formId = data.id;
+                        window.history.replaceState({}, '', `?id=${data.id}&prog_id=${progId}`);
+                        await supabase.from('form_versions').insert([{ form_id: formId, schema: finalSchema, version_note: 'Initial Creation' }]);
                     }
-
-                    document.getElementById('statusBadge').textContent = 'Saved';
-                    document.getElementById('statusBadge').className = 'badge badge-success';
-                } catch (error) {
-                    alert('Error saving form: ' + error.message);
-                } finally {
-                    btn.innerHTML = '<i data-lucide="save"></i> Save Form';
-                    btn.disabled = false;
-                    lucide.createIcons();
-                }
+                    document.getElementById('statusBadge').textContent = 'Saved'; document.getElementById('statusBadge').className = 'badge badge-success';
+                } catch (error) { alert('Error saving form: ' + error.message); } 
+                finally { btn.innerHTML = '<i data-lucide="save"></i> Save Form'; btn.disabled = false; lucide.createIcons(); }
             });
 
-            document.getElementById('previewBtn').addEventListener('click', () => {
-                if (!currentSlug) return alert("Please Save the form at least once before previewing.");
-                const publicUrl = window.location.origin + '/public-form.html?slug=' + currentSlug;
-                window.open(publicUrl, '_blank');
+            const historyModal = document.getElementById('historyModal');
+            document.getElementById('versionHistoryBtn').addEventListener('click', async () => {
+                if (!formId) return alert("Please save the form at least once to generate history.");
+                historyModal.classList.add('active'); const list = document.getElementById('historyList'); list.innerHTML = '<div style="text-align:center;"><i data-lucide="loader" class="spin"></i></div>'; lucide.createIcons();
+                const { data, error } = await supabase.from('form_versions').select('*').eq('form_id', formId).order('created_at', { ascending: false });
+                if (error) return list.innerHTML = `<div style="color:red;">Failed to load history.</div>`;
+                if (data.length === 0) return list.innerHTML = `<div style="color:var(--text-muted);">No version history found.</div>`;
+                list.innerHTML = '';
+                data.forEach((v, idx) => {
+                    const date = new Date(v.created_at).toLocaleString(); const isLatest = idx === 0 ? '<span class="badge badge-success" style="font-size:0.6rem; padding: 2px 4px;">Latest</span>' : '';
+                    list.innerHTML += `<div style="padding: 12px; border: 1px solid var(--border-light); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; background: #fff;"><div><div style="font-weight: 600; font-size: 0.9rem;">${date} ${isLatest}</div><div style="font-size: 0.8rem; color: var(--text-muted);">${v.version_note}</div></div><button class="btn btn-outline restore-btn" data-id="${v.id}" style="padding: 4px 8px; font-size: 0.75rem;">Restore</button></div>`;
+                });
+                document.querySelectorAll('.restore-btn').forEach(btn => { btn.addEventListener('click', () => { if(!confirm('Restore this version? Unsaved changes will be lost.')) return; const version = data.find(d => d.id === btn.dataset.id); builder.loadSchema(version.schema); historyModal.classList.remove('active'); }); });
             });
+            document.getElementById('closeHistoryBtn').addEventListener('click', () => historyModal.classList.remove('active'));
 
+            document.getElementById('previewBtn').addEventListener('click', () => { if (!currentSlug) return alert("Please Save the form at least once before previewing."); window.open(window.location.origin + '/public-form.html?slug=' + currentSlug, '_blank'); });
             const shareModal = document.getElementById('shareModal');
-            document.getElementById('shareBtn').addEventListener('click', () => {
-                if (!currentSlug) return alert("Please Save the form before sharing.");
-                const publicUrl = window.location.origin + '/public-form.html?slug=' + currentSlug;
-                document.getElementById('shareUrlInput').value = publicUrl;
-                shareModal.classList.add('active');
-            });
-
+            document.getElementById('shareBtn').addEventListener('click', () => { if (!currentSlug) return alert("Please Save the form before sharing."); document.getElementById('shareUrlInput').value = window.location.origin + '/public-form.html?slug=' + currentSlug; shareModal.classList.add('active'); });
             document.getElementById('closeShareBtn').addEventListener('click', () => shareModal.classList.remove('active'));
-            
-            document.getElementById('copyShareBtn').addEventListener('click', () => {
-                const input = document.getElementById('shareUrlInput');
-                input.select();
-                document.execCommand('copy');
-                document.getElementById('shareStatusText').style.display = 'block';
-                setTimeout(() => document.getElementById('shareStatusText').style.display = 'none', 3000);
-            });
+            document.getElementById('copyShareBtn').addEventListener('click', () => { document.getElementById('shareUrlInput').select(); document.execCommand('copy'); document.getElementById('shareStatusText').style.display = 'block'; setTimeout(() => document.getElementById('shareStatusText').style.display = 'none', 3000); });
         });
     </script>
 </body>

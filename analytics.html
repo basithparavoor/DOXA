@@ -7,214 +7,310 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="variables.css">
     <link rel="stylesheet" href="dashboard.css">
-    <link rel="stylesheet" href="analytics.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="components.css">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px; margin-top: 24px; }
+        .chart-card { background: var(--bg-surface); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+        .chart-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
+        .chart-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px; }
+        .chart-canvas-wrapper { position: relative; flex: 1; min-height: 250px; width: 100%; }
+        
+        .metric-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .metric-card { background: var(--bg-surface); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); text-align: center; }
+        .metric-val { font-size: 2rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+        .metric-label { font-size: 0.875rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        @media print {
+            .sidebar, .top-header, .page-actions, .form-selector-area { display: none !important; }
+            .main-content { margin: 0; padding: 0; }
+            .chart-card { break-inside: avoid; page-break-inside: avoid; }
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
         <!-- Sidebar -->
-        <div class="sidebar-overlay" id="mobileSidebarOverlay"></div>
         <aside class="sidebar">
             <div class="sidebar-header">
-                <!-- Replaced Lucide icon with default logo.png -->
-                <img id="globalSidebarLogo" src="logo.png" alt="Organization Logo" style="height: 28px; width: auto; object-fit: contain;">
+                <img id="globalSidebarLogo" src="logo.png" alt="Logo" style="height: 28px; object-fit: contain;">
                 <span>DOXA ADMIN</span>
             </div>
             <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-item">
-                    <i data-lucide="layout-dashboard"></i> Dashboard
-                </a>
-                <a href="programmes.html" class="nav-item">
-                    <i data-lucide="folder-kanban"></i> Programmes
-                </a>
-                <a href="forms.html" class="nav-item">
-                    <i data-lucide="file-text"></i> Forms
-                </a>
-                <a href="responses.html" class="nav-item">
-                    <i data-lucide="inbox"></i> Responses
-                </a>
-                <a href="files.html" class="nav-item">
-                    <i data-lucide="folder-open"></i> File Manager
-                </a>
-                <a href="analytics.html" class="nav-item">
-                    <i data-lucide="bar-chart-2"></i> Analytics
-                </a>
-                
+                <a href="dashboard.html" class="nav-item"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                <a href="programmes.html" class="nav-item"><i data-lucide="folder-kanban"></i> Programmes</a>
+                <a href="forms.html" class="nav-item"><i data-lucide="file-text"></i> Forms</a>
+                <a href="responses.html" class="nav-item"><i data-lucide="inbox"></i> Responses</a>
+                <a href="files.html" class="nav-item"><i data-lucide="folder-open"></i> File Manager</a>
+                <a href="analytics.html" class="nav-item active"><i data-lucide="bar-chart-2"></i> Analytics</a>
                 <div style="margin: 16px 0; border-bottom: 1px solid var(--border-light);"></div>
-                
-                <a href="staff.html" class="nav-item">
-                    <i data-lucide="users"></i> Staff
-                </a>
-                <a href="settings.html" class="nav-item">
-                    <i data-lucide="settings"></i> Settings
-                </a>
+                <a href="staff.html" class="nav-item"><i data-lucide="users"></i> Staff</a>
+                <a href="settings.html" class="nav-item"><i data-lucide="settings"></i> Settings</a>
             </nav>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
             <header class="top-header">
-                <!-- NEW: Hamburger Button -->
-                <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
-                    <i data-lucide="menu"></i>
-                </button>
-                <div class="search-bar">
-                    <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
-                    <input type="text" placeholder="Search analytics...">
-                </div>
-                <div class="header-actions">
-                    <button class="icon-btn" onclick="window.print()" title="Print Report"><i data-lucide="printer"></i></button>
-                    <div class="user-profile">
-                        <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">AD</div>
-                    </div>
-                </div>
+                <div class="search-bar"></div>
             </header>
 
             <div class="page-content">
                 <div class="page-header">
                     <div class="page-title">
-                        <h1>Global Analytics</h1>
-                        <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 4px;">Platform-wide submission and performance metrics.</p>
+                        <h1>Form Analytics & Insights</h1>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline" onclick="window.print()"><i data-lucide="printer"></i> Print Report</button>
                     </div>
                 </div>
 
-                <!-- KPI Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-header"><span>Total Submissions</span><i data-lucide="users" style="color: var(--primary)"></i></div>
-                        <div class="stat-value" id="kpiTotal">-</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header"><span>Active Published Forms</span><i data-lucide="file-check-2" style="color: var(--success)"></i></div>
-                        <div class="stat-value" id="kpiForms">-</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header"><span>Approval Rate</span><i data-lucide="check-circle" style="color: var(--warning)"></i></div>
-                        <div class="stat-value" id="kpiApproval">-</div>
-                    </div>
+                <div class="form-selector-area" style="background: var(--bg-surface-hover); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); margin-bottom: 24px;">
+                    <label style="font-weight: 600; margin-right: 12px; color: var(--text-main);">Select Form to Analyze:</label>
+                    <select id="formSelector" class="form-control" style="max-width: 400px; display: inline-block; font-size: 1rem;">
+                        <option value="">Loading forms...</option>
+                    </select>
                 </div>
 
-                <!-- Charts Area -->
-                <div class="charts-grid">
-                    <!-- Trend Chart -->
-                    <div class="chart-card">
-                        <div class="chart-header">
-                            <span class="chart-title">Submissions (Last 7 Days)</span>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="trendChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Status Distribution Chart -->
-                    <div class="chart-card">
-                        <div class="chart-header">
-                            <span class="chart-title">Response Status Distribution</span>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="statusChart"></canvas>
-                        </div>
-                    </div>
+                <!-- High-level Metrics -->
+                <div class="metric-cards" id="metricsBar">
+                    <div class="metric-card"><div class="metric-val">-</div><div class="metric-label">Total Submissions</div></div>
                 </div>
 
+                <!-- Time Series Chart -->
+                <div class="chart-card" id="timeSeriesCard" style="display: none; margin-bottom: 24px;">
+                    <div class="chart-title">Submissions Over Time</div>
+                    <div class="chart-canvas-wrapper" style="min-height: 300px;"><canvas id="chart_timeseries"></canvas></div>
+                </div>
+
+                <!-- Individual Question Charts -->
+                <div class="analytics-grid" id="chartContainer">
+                    <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 60px; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-lg);">
+                        <i data-lucide="bar-chart-2" style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>Select a form above to generate visual analytics.</p>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
     <script type="module">
-        import { AnalyticsAPI } from './analytics.js';
+        import { supabase } from './config.js';
 
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
+            const formSelector = document.getElementById('formSelector');
+            const chartContainer = document.getElementById('chartContainer');
+            const metricsBar = document.getElementById('metricsBar');
+            const timeSeriesCard = document.getElementById('timeSeriesCard');
+            let chartInstances = [];
 
-            try {
-                // 1. Fetch Data
-                const stats = await AnalyticsAPI.getGlobalStats();
+            // Universal Chart.js Settings
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#64748b';
+            const colorPalette = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6', '#EC4899', '#14B8A6'];
 
-                // 2. Populate KPIs
-                document.getElementById('kpiTotal').textContent = stats.totalSubmissions;
-                document.getElementById('kpiForms').textContent = stats.activeForms;
-                
-                const totalProcessed = stats.statusCounts.APPROVED + stats.statusCounts.REJECTED;
-                let approvalRate = 0;
-                if (totalProcessed > 0) {
-                    approvalRate = Math.round((stats.statusCounts.APPROVED / totalProcessed) * 100);
+            // 1. Load Published Forms
+            const { data: forms, error } = await supabase.from('forms').select('id, title, schema').eq('status', 'PUBLISHED').order('created_at', { ascending: false });
+            if (error) {
+                formSelector.innerHTML = '<option value="">Error loading forms</option>';
+                return;
+            }
+            
+            formSelector.innerHTML = '<option value="">-- Choose a Form --</option>';
+            forms.forEach(f => formSelector.innerHTML += `<option value="${f.id}">${f.title}</option>`);
+
+            // 2. Handle Selection
+            formSelector.addEventListener('change', async (e) => {
+                const formId = e.target.value;
+                if (!formId) {
+                    chartContainer.innerHTML = '';
+                    timeSeriesCard.style.display = 'none';
+                    metricsBar.innerHTML = '<div class="metric-card"><div class="metric-val">-</div><div class="metric-label">Total Submissions</div></div>';
+                    return;
                 }
-                document.getElementById('kpiApproval').textContent = `${approvalRate}%`;
+                const selectedForm = forms.find(f => f.id === formId);
+                await generateAnalytics(selectedForm);
+            });
 
-                // 3. Configure common Chart.js defaults to match our premium UI
-                Chart.defaults.font.family = "'Inter', sans-serif";
-                Chart.defaults.color = '#64748B'; // var(--text-muted)
+            async function generateAnalytics(form) {
+                chartInstances.forEach(c => c.destroy()); chartInstances = [];
+                chartContainer.innerHTML = ''; timeSeriesCard.style.display = 'none';
+                
+                const { data: responses, error } = await supabase.from('responses').select('data, submitted_at, status').eq('form_id', form.id);
+                if (error) return alert("Failed to fetch analytics data.");
 
-                // 4. Render Trend Line Chart
-                const trendCtx = document.getElementById('trendChart').getContext('2d');
-                new Chart(trendCtx, {
+                // --- 1. Compute Global Metrics ---
+                let totalScoreSum = 0;
+                let scoredResponsesCount = 0;
+                let totalRevenue = 0;
+                let paymentCurrency = 'USD';
+
+                responses.forEach(r => {
+                    if (r.data['_total_score'] !== undefined) {
+                        totalScoreSum += parseFloat(r.data['_total_score']);
+                        scoredResponsesCount++;
+                    }
+                });
+
+                const paymentField = form.schema.fields.find(f => f.type === 'payment');
+                if (paymentField) {
+                    paymentCurrency = paymentField.currency || 'USD';
+                    totalRevenue = responses.length * (paymentField.amount || 0); // Simplified calculation based on form entries
+                }
+
+                let metricsHtml = `<div class="metric-card"><div class="metric-val">${responses.length}</div><div class="metric-label">Total Submissions</div></div>`;
+                if (scoredResponsesCount > 0) {
+                    const avgScore = (totalScoreSum / scoredResponsesCount).toFixed(1);
+                    metricsHtml += `<div class="metric-card"><div class="metric-val">${avgScore}</div><div class="metric-label">Average Quiz Score</div></div>`;
+                }
+                if (paymentField) {
+                    metricsHtml += `<div class="metric-card"><div class="metric-val">${totalRevenue.toLocaleString()} ${paymentCurrency}</div><div class="metric-label">Estimated Revenue</div></div>`;
+                }
+                metricsBar.innerHTML = metricsHtml;
+
+                if (responses.length === 0) {
+                    chartContainer.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px;">No response data available for this form yet.</div>';
+                    return;
+                }
+
+                // --- 2. Time Series Chart ---
+                const dateCounts = {};
+                responses.forEach(r => {
+                    const date = new Date(r.submitted_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    dateCounts[date] = (dateCounts[date] || 0) + 1;
+                });
+                
+                timeSeriesCard.style.display = 'flex';
+                const ctxTime = document.getElementById('chart_timeseries').getContext('2d');
+                chartInstances.push(new Chart(ctxTime, {
                     type: 'line',
                     data: {
-                        labels: Object.keys(stats.trendData),
+                        labels: Object.keys(dateCounts),
                         datasets: [{
-                            label: 'Daily Submissions',
-                            data: Object.values(stats.trendData),
-                            borderColor: '#4F46E5', // primary
-                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.3, // smooth curves
+                            label: 'Submissions',
+                            data: Object.values(dateCounts),
+                            borderColor: colorPalette[0],
+                            backgroundColor: colorPalette[0] + '20',
+                            borderWidth: 3,
                             fill: true,
-                            pointBackgroundColor: '#4F46E5'
+                            tension: 0.4,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: colorPalette[0],
+                            pointBorderWidth: 2,
+                            pointRadius: 4
                         }]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#E2E8F0' } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+                }));
 
-                // 5. Render Status Doughnut Chart
-                const statusCtx = document.getElementById('statusChart').getContext('2d');
-                new Chart(statusCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Submitted', 'Under Review', 'Approved', 'Rejected', 'Completed'],
-                        datasets: [{
-                            data: [
-                                stats.statusCounts.SUBMITTED,
-                                stats.statusCounts.UNDER_REVIEW,
-                                stats.statusCounts.APPROVED,
-                                stats.statusCounts.REJECTED,
-                                stats.statusCounts.COMPLETED
-                            ],
-                            backgroundColor: [
-                                '#94A3B8', // Submitted (Gray)
-                                '#F59E0B', // Under Review (Warning/Orange)
-                                '#10B981', // Approved (Success/Green)
-                                '#EF4444', // Rejected (Danger/Red)
-                                '#3B82F6'  // Completed (Blue)
-                            ],
-                            borderWidth: 0,
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '70%',
-                        plugins: {
-                            legend: { position: 'right' }
-                        }
-                    }
-                });
+                // --- 3. Field-Level Analytics ---
+                const analyzableFields = form.schema.fields.filter(f => ['select', 'radio', 'checkbox', 'matrix', 'rank'].includes(f.type));
 
-            } catch (error) {
-                console.error("Analytics Error:", error);
-                alert("Failed to load analytics data.");
+                analyzableFields.forEach(field => {
+                    const card = document.createElement('div');
+                    card.className = 'chart-card';
+                    card.innerHTML = `<div class="chart-title">${field.label}</div><div class="chart-desc">${field.type.toUpperCase()}</div><div class="chart-canvas-wrapper"><canvas id="chart_${field.id}"></canvas></div>`;
+                    chartContainer.appendChild(card);
+                    
+                    const ctx = document.getElementById(`chart_${field.id}`).getContext('2d');
+                    let newChart;
+
+                    if (['select', 'radio', 'checkbox'].includes(field.type)) {
+                        const counts = {};
+                        (field.options || []).forEach(opt => counts[opt] = 0);
+                        
+                        responses.forEach(r => {
+                            const answer = r.data[field.id];
+                            if (!answer) return;
+                            if (Array.isArray(answer)) { answer.forEach(a => { if (counts[a] !== undefined) counts[a]++; }); } 
+                            else { if (counts[answer] !== undefined) counts[answer]++; }
+                        });
+
+                        newChart = new Chart(ctx, {
+                            type: field.type === 'checkbox' ? 'bar' : 'doughnut',
+                            data: {
+                                labels: Object.keys(counts),
+                                datasets: [{
+                                    label: 'Votes', data: Object.values(counts),
+                                    backgroundColor: field.type === 'checkbox' ? colorPalette[0] : colorPalette,
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: field.type === 'checkbox' ? 'none' : 'right' } } }
+                        });
+                    } 
+                    
+                    else if (field.type === 'matrix') {
+                        // Grouped Bar Chart
+                        const datasets = field.columns.map((col, i) => ({
+                            label: col,
+                            backgroundColor: colorPalette[i % colorPalette.length],
+                            data: field.rows.map(() => 0) // Initialize with 0s
+                        }));
+
+                        responses.forEach(r => {
+                            const answerObj = r.data[field.id];
+                            if (answerObj && typeof answerObj === 'object') {
+                                field.rows.forEach((row, rowIndex) => {
+                                    const selectedCol = answerObj[row];
+                                    const colIndex = field.columns.indexOf(selectedCol);
+                                    if (colIndex > -1) datasets[colIndex].data[rowIndex]++;
+                                });
+                            }
+                        });
+
+                        newChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: { labels: field.rows, datasets: datasets },
+                            options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { precision: 0 } } } }
+                        });
+                    }
+                    
+                    else if (field.type === 'rank') {
+                        // Calculate Average Rank Position (1 is best)
+                        const rankSums = {}; const rankCounts = {};
+                        (field.options || []).forEach(opt => { rankSums[opt] = 0; rankCounts[opt] = 0; });
+
+                        responses.forEach(r => {
+                            const answerStr = r.data[field.id];
+                            if (answerStr) {
+                                const orderArr = answerStr.split(',').map(s => s.trim());
+                                orderArr.forEach((opt, index) => {
+                                    if (rankSums[opt] !== undefined) {
+                                        rankSums[opt] += (index + 1); // 1st place = 1, 2nd place = 2...
+                                        rankCounts[opt]++;
+                                    }
+                                });
+                            }
+                        });
+
+                        const avgRanks = Object.keys(rankSums).map(opt => {
+                            return rankCounts[opt] > 0 ? (rankSums[opt] / rankCounts[opt]).toFixed(2) : 0;
+                        });
+
+                        // Sort by best average rank (lowest number is better)
+                        const sortedData = Object.keys(rankSums).map((opt, i) => ({ label: opt, avg: avgRanks[i] }))
+                                            .filter(item => item.avg > 0)
+                                            .sort((a, b) => a.avg - b.avg);
+
+                        newChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: sortedData.map(d => d.label),
+                                datasets: [{
+                                    label: 'Average Position (Lower is Better)',
+                                    data: sortedData.map(d => d.avg),
+                                    backgroundColor: colorPalette[1],
+                                }]
+                            },
+                            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true } }, plugins: { tooltip: { callbacks: { label: (ctx) => `Avg Position: ${ctx.raw}` } } } }
+                        });
+                    }
+
+                    if (newChart) chartInstances.push(newChart);
+                });
             }
         });
     </script>

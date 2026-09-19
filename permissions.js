@@ -1,5 +1,5 @@
 // permissions.js
-import { supabase } from '../config.js';
+import { supabase } from './config.js';
 
 export const PermissionsAPI = {
     // Get all users who have access to a specific form
