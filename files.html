@@ -59,10 +59,10 @@
         <!-- Main Content -->
         <main class="main-content">
             <header class="top-header">
-                <!-- NEW: Hamburger Button -->
-                <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
-                    <i data-lucide="menu"></i>
-                </button>
+<button class="icon-btn mobile-menu-btn" id="mobileMenuBtn" style="display: none;">
+        <i data-lucide="menu"></i>
+    </button>
+               
                 <div class="search-bar">
                     <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
                     <input type="text" placeholder="Search files...">
@@ -181,7 +181,6 @@ if (mobileMenuBtn && sidebar) {
         sidebar.classList.toggle('active');
     });
 
-    // Close sidebar when tapping outside of it on mobile screens
     document.addEventListener('click', (e) => {
         if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
             if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
