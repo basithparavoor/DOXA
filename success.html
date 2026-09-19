@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submission Successful</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="variables.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background-color: var(--bg-surface-hover);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-sans);
+            padding: 20px;
+            margin: 0;
+        }
+        .success-card {
+            background: var(--bg-surface);
+            padding: 48px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+            border: 1px solid var(--border-light);
+        }
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--success);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px auto;
+        }
+        .success-icon svg { width: 32px; height: 32px; }
+        .reg-box {
+            background: var(--bg-surface-hover);
+            border: 2px dashed var(--border-strong);
+            padding: 24px;
+            border-radius: var(--radius-md);
+            margin: 32px 0;
+        }
+        .reg-id {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border: 1px solid var(--border-strong);
+            background: transparent;
+            color: var(--text-main);
+            text-decoration: none;
+        }
+        .btn:hover { background: var(--bg-surface-hover); }
+    </style>
+</head>
+<body>
+
+    <div class="success-card">
+        <div class="success-icon"><i data-lucide="check"></i></div>
+        <h1 style="font-size: 1.5rem; margin-bottom: 8px; color: var(--text-main);">Registration Successful</h1>
+        <p style="color: var(--text-muted);" id="formNameDisplay">Your response has been securely recorded.</p>
+        
+        <div class="reg-box">
+            <div style="font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Your Registration ID</div>
+            <div class="reg-id" id="regIdDisplay">REG-XXXX-XXXX</div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button class="btn" onclick="window.print()"><i data-lucide="printer"></i> Print Receipt</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            const params = new URLSearchParams(window.location.search);
+            const regId = params.get('reg_id');
+            const formName = params.get('form');
+
+            if(regId) document.getElementById('regIdDisplay').textContent = regId;
+            if(formName) document.getElementById('formNameDisplay').textContent = `Your response for "${formName}" has been securely recorded.`;
+        });
+    </script>
+</body>
+</html>
