@@ -8,7 +8,7 @@ export class FormRenderer {
         this.formData = null;
         this.sessionToken = new URLSearchParams(window.location.search).get('session');
         this.savedData = {}; 
-        this.inventoryCounts = {}; // NEW: Holds slot usage for each option
+        this.inventoryCounts = {}; 
         this.currentPage = 0;
         this.pages = [];
         this.init();
@@ -76,20 +76,6 @@ export class FormRenderer {
         document.body.style.backgroundColor = theme.bgColor || 'var(--bg-surface-hover)';
         document.body.style.fontFamily = theme.fontFamily || 'Inter, sans-serif';
         document.documentElement.style.setProperty('--primary', theme.primaryColor || '#4F46E5');
-        
-        const borderRadius = theme.borderRadius || '8px';
-        const style = document.createElement('style');
-        style.innerHTML = `
-            .public-form-container { border-radius: ${borderRadius}; }
-            .field-wrapper { background: ${theme.fieldBgColor || '#FFFFFF'}; border-radius: ${borderRadius}; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-light); transition: all 0.3s ease; }
-            .public-input { border-radius: ${borderRadius}; }
-            .wizard-page { display: none; animation: fadeIn 0.4s ease; }
-            .wizard-page.active { display: block; }
-            .progress-bar { height: 6px; background: var(--border-light); border-radius: 3px; overflow: hidden; margin-top: 16px; }
-            .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        `;
-        document.head.appendChild(style);
     }
 
     render() {
@@ -104,7 +90,7 @@ export class FormRenderer {
                     <img src="${logoSrc}" alt="Logo" style="height: 60px; width: auto; margin-bottom: 16px; object-fit: contain; border-radius: 4px;">
                     <h1 class="public-form-title">${schema.title}</h1>
                     <p class="public-form-desc">${schema.description}</p>
-                    ${this.pages.length > 1 ? `<div class="progress-bar"><div class="progress-fill" id="formProgress" style="width: ${(1 / this.pages.length) * 100}%"></div></div>` : ''}
+                    ${this.pages.length > 1 ? `<div class="progress-bar"><div class="progress-fill" id="formProgress" style="width: 0%"></div></div>` : ''}
                 </div>
                 <form id="publicRespondentForm">
                     <div class="public-form-body" style="padding: 32px;">
@@ -159,8 +145,7 @@ export class FormRenderer {
             (field.options || []).forEach((opt, i) => {
                 const limit = field.limits && field.limits[i] ? parseInt(field.limits[i]) : null;
                 const isSoldOut = limit !== null && !isNaN(limit) && (this.inventoryCounts[opt] || 0) >= limit;
-                const soldOutText = isSoldOut ? ' (Sold Out)' : '';
-                optionsHtml += `<option value="${opt}" ${prefillVal === opt ? 'selected' : ''} ${isSoldOut ? 'disabled' : ''}>${opt}${soldOutText}</option>`;
+                optionsHtml += `<option value="${opt}" ${prefillVal === opt ? 'selected' : ''} ${isSoldOut ? 'disabled' : ''}>${opt}${isSoldOut ? ' (Sold Out)' : ''}</option>`;
             });
             inputHtml = `<select name="${field.id}" class="public-input logic-input" ${req}><option value="" disabled ${!prefillVal ? 'selected' : ''}>Select...</option>${optionsHtml}</select>`;
         } else if (field.type === 'radio') {
@@ -168,8 +153,7 @@ export class FormRenderer {
             (field.options || []).forEach((opt, i) => {
                 const limit = field.limits && field.limits[i] ? parseInt(field.limits[i]) : null;
                 const isSoldOut = limit !== null && !isNaN(limit) && (this.inventoryCounts[opt] || 0) >= limit;
-                const soldOutText = isSoldOut ? ' <span style="color:var(--danger); font-size:0.75rem;">(Sold Out)</span>' : '';
-                optionsHtml += `<label class="radio-label" style="${isSoldOut ? 'opacity:0.5; pointer-events:none;' : ''}"><input type="radio" name="${field.id}" class="logic-input" value="${opt}" ${req} ${prefillVal === opt ? 'checked' : ''} ${isSoldOut ? 'disabled' : ''}><span>${opt}${soldOutText}</span></label>`;
+                optionsHtml += `<label class="radio-label" style="${isSoldOut ? 'opacity:0.5; pointer-events:none;' : ''}"><input type="radio" name="${field.id}" class="logic-input" value="${opt}" ${req} ${prefillVal === opt ? 'checked' : ''} ${isSoldOut ? 'disabled' : ''}><span>${opt}${isSoldOut ? ' <span style="color:var(--danger); font-size:0.75rem;">(Sold Out)</span>' : ''}</span></label>`;
             });
             inputHtml = `<div class="radio-group" style="text-align: left;">${optionsHtml}</div>`;
         } else if (field.type === 'checkbox') {
@@ -178,8 +162,7 @@ export class FormRenderer {
             (field.options || []).forEach((opt, i) => {
                 const limit = field.limits && field.limits[i] ? parseInt(field.limits[i]) : null;
                 const isSoldOut = limit !== null && !isNaN(limit) && (this.inventoryCounts[opt] || 0) >= limit;
-                const soldOutText = isSoldOut ? ' <span style="color:var(--danger); font-size:0.75rem;">(Sold Out)</span>' : '';
-                optionsHtml += `<label class="radio-label" style="${isSoldOut ? 'opacity:0.5; pointer-events:none;' : ''}"><input type="checkbox" name="${field.id}[]" class="logic-input" value="${opt}" ${prefillArr.includes(opt) ? 'checked' : ''} ${isSoldOut ? 'disabled' : ''}><span>${opt}${soldOutText}</span></label>`;
+                optionsHtml += `<label class="radio-label" style="${isSoldOut ? 'opacity:0.5; pointer-events:none;' : ''}"><input type="checkbox" name="${field.id}[]" class="logic-input" value="${opt}" ${prefillArr.includes(opt) ? 'checked' : ''} ${isSoldOut ? 'disabled' : ''}><span>${opt}${isSoldOut ? ' <span style="color:var(--danger); font-size:0.75rem;">(Sold Out)</span>' : ''}</span></label>`;
             });
             inputHtml = `<div class="radio-group" style="text-align: left;">${optionsHtml}</div>`;
         } else if (field.type === 'matrix') {
@@ -202,12 +185,49 @@ export class FormRenderer {
         return `<div id="wrapper_${field.id}" class="field-wrapper" style="text-align: ${align};"><label class="field-label" style="font-size: 1.1rem; margin-bottom: 12px;">${field.label} ${ast}</label>${descHtml}${imageHtml}${inputHtml}</div>`;
     }
 
+    // NEW: Page-Level Logic Evaluator
+    isPageVisible(pageIndex) {
+        if (pageIndex === 0) return true; // Always show the first page
+        const pageFields = this.pages[pageIndex];
+        const sectionField = pageFields.find(f => f.type === 'section');
+        
+        // If the section doesn't have a logic target, it's always visible
+        if (!sectionField || !sectionField.logic || !sectionField.logic.fieldId) return true;
+
+        const formEl = document.getElementById('publicRespondentForm');
+        if (!formEl) return true;
+        
+        const currentFormData = new FormData(formEl);
+        const targetValues = currentFormData.getAll(sectionField.logic.fieldId).concat(currentFormData.getAll(sectionField.logic.fieldId + '[]'));
+        
+        // Return true if the condition is met, otherwise false (skip page)
+        return targetValues.some(val => val.toLowerCase().trim() === sectionField.logic.value.toLowerCase().trim());
+    }
+
     showPage(n) {
         document.querySelectorAll('.wizard-page').forEach(el => el.classList.remove('active'));
         document.getElementById(`page_${n}`).classList.add('active');
-        const prevBtn = document.getElementById('prevBtn'); const nextBtn = document.getElementById('nextBtn'); const submitBtn = document.getElementById('submitFormBtn'); const saveBtn = document.getElementById('saveDraftBtn');
-        if (n === 0) prevBtn.style.display = 'none'; else prevBtn.style.display = 'inline-flex';
-        if (n === (this.pages.length - 1)) { nextBtn.style.display = 'none'; submitBtn.style.display = 'inline-flex'; saveBtn.style.display = 'inline-flex'; } else { nextBtn.style.display = 'inline-flex'; submitBtn.style.display = 'none'; saveBtn.style.display = 'none'; }
+        
+        const prevBtn = document.getElementById('prevBtn'); 
+        const nextBtn = document.getElementById('nextBtn'); 
+        const submitBtn = document.getElementById('submitFormBtn'); 
+        const saveBtn = document.getElementById('saveDraftBtn');
+
+        // Look backwards to see if there is a visible previous page
+        let hasPrev = false;
+        for (let i = n - 1; i >= 0; i--) { if (this.isPageVisible(i)) { hasPrev = true; break; } }
+        prevBtn.style.display = hasPrev ? 'inline-flex' : 'none';
+
+        // Look forwards to see if there is a visible next page
+        let hasNext = false;
+        for (let i = n + 1; i < this.pages.length; i++) { if (this.isPageVisible(i)) { hasNext = true; break; } }
+
+        if (!hasNext) { 
+            nextBtn.style.display = 'none'; submitBtn.style.display = 'inline-flex'; saveBtn.style.display = 'inline-flex'; 
+        } else { 
+            nextBtn.style.display = 'inline-flex'; submitBtn.style.display = 'none'; saveBtn.style.display = 'none'; 
+        }
+
         if (this.pages.length > 1) document.getElementById('formProgress').style.width = `${((n + 1) / this.pages.length) * 100}%`;
     }
 
@@ -234,8 +254,26 @@ export class FormRenderer {
     bindEvents() {
         const formEl = document.getElementById('publicRespondentForm');
         formEl.addEventListener('change', () => this.applyLogic()); formEl.addEventListener('input', () => this.applyLogic());
-        document.getElementById('nextBtn').addEventListener('click', () => { if (this.validateCurrentPage()) { this.currentPage++; this.showPage(this.currentPage); window.scrollTo({ top: 0, behavior: 'smooth' }); }});
-        document.getElementById('prevBtn').addEventListener('click', () => { this.currentPage--; this.showPage(this.currentPage); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        
+        // NEW: Dynamic Next Page Navigation
+        document.getElementById('nextBtn').addEventListener('click', () => { 
+            if (this.validateCurrentPage()) { 
+                let next = this.currentPage + 1;
+                while (next < this.pages.length && !this.isPageVisible(next)) { next++; } // Skip invalid pages
+                if (next < this.pages.length) {
+                    this.currentPage = next; this.showPage(this.currentPage); window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                }
+            }
+        });
+        
+        // NEW: Dynamic Previous Page Navigation
+        document.getElementById('prevBtn').addEventListener('click', () => { 
+            let prev = this.currentPage - 1;
+            while (prev >= 0 && !this.isPageVisible(prev)) { prev--; } // Skip invalid pages
+            if (prev >= 0) {
+                this.currentPage = prev; this.showPage(this.currentPage); window.scrollTo({ top: 0, behavior: 'smooth' }); 
+            }
+        });
         
         document.querySelectorAll('.rank-container').forEach(container => {
             container.addEventListener('click', (e) => {
@@ -259,6 +297,12 @@ export class FormRenderer {
                 for (let [key, value] of formData.entries()) {
                     const matrixMatch = key.match(/^(.+)\[(.+)\]$/);
                     let baseKey = key.endsWith('[]') ? key.slice(0, -2) : (matrixMatch ? matrixMatch[1] : key);
+                    
+                    // Filter out skipped pages
+                    let fieldPageIdx = -1;
+                    this.pages.forEach((page, idx) => { if (page.find(f => f.id === baseKey)) fieldPageIdx = idx; });
+                    if (fieldPageIdx > -1 && !this.isPageVisible(fieldPageIdx)) continue;
+                    
                     if (key.endsWith('[]')) { if (!answers[baseKey]) answers[baseKey] = []; answers[baseKey].push(value); } 
                     else if (matrixMatch) { if (!answers[baseKey]) answers[baseKey] = {}; answers[baseKey][matrixMatch[2]] = value; } 
                     else if (!(value instanceof File) || (value instanceof File && value.size === 0)) { answers[key] = value; }
@@ -279,7 +323,6 @@ export class FormRenderer {
             
             const btn = document.getElementById('submitFormBtn'); 
             btn.disabled = true; 
-            
             const paymentField = this.formData.schema.fields.find(f => f.type === 'payment');
             btn.textContent = paymentField ? 'Redirecting to Secure Checkout...' : 'Uploading files & Submitting...';
 
@@ -288,84 +331,47 @@ export class FormRenderer {
                 const formData = new FormData(formEl); 
                 const answers = {};
 
-                // 1. Compile form data and upload files directly to Storage bucket
                 for (let [key, value] of formData.entries()) {
                     const matrixMatch = key.match(/^(.+)\[(.+)\]$/);
                     let baseKey = key.endsWith('[]') ? key.slice(0, -2) : (matrixMatch ? matrixMatch[1] : key);
-                    const wrapper = document.getElementById(`wrapper_${baseKey}`);
                     
+                    // Filter out skipped pages completely
+                    let fieldPageIdx = -1;
+                    this.pages.forEach((page, idx) => { if (page.find(f => f.id === baseKey)) fieldPageIdx = idx; });
+                    if (fieldPageIdx > -1 && !this.isPageVisible(fieldPageIdx)) continue;
+                    
+                    const wrapper = document.getElementById(`wrapper_${baseKey}`);
                     if (wrapper && wrapper.style.display === 'none') continue;
-                    if (baseKey === paymentField?.id) continue; // Skip raw payment payload
+                    if (baseKey === paymentField?.id) continue;
 
-                    if (key.endsWith('[]')) { 
-                        if (!answers[baseKey]) answers[baseKey] = []; 
-                        answers[baseKey].push(value); 
-                    } else if (matrixMatch) { 
-                        if (!answers[baseKey]) answers[baseKey] = {}; 
-                        answers[baseKey][matrixMatch[2]] = value; 
-                    } else if (value instanceof File && value.size > 0) { 
-                        const path = await StorageAPI.uploadFile(value, this.formData.programme_id, regId); 
-                        answers[key] = { type: 'file', path: path, name: value.name }; 
-                    } else if (!(value instanceof File)) { 
-                        answers[key] = value; 
-                    }
+                    if (key.endsWith('[]')) { if (!answers[baseKey]) answers[baseKey] = []; answers[baseKey].push(value); } 
+                    else if (matrixMatch) { if (!answers[baseKey]) answers[baseKey] = {}; answers[baseKey][matrixMatch[2]] = value; } 
+                    else if (value instanceof File && value.size > 0) { const path = await StorageAPI.uploadFile(value, this.formData.programme_id, regId); answers[key] = { type: 'file', path: path, name: value.name }; } 
+                    else if (!(value instanceof File)) { answers[key] = value; }
                 }
 
-                // 2. Score Quizzes
-                let totalScore = 0; 
-                let isQuiz = false; 
-                const fieldMap = {}; 
-                this.formData.schema.fields.forEach(f => fieldMap[f.id] = f);
-                
+                let totalScore = 0; let isQuiz = false; const fieldMap = {}; this.formData.schema.fields.forEach(f => fieldMap[f.id] = f);
                 for (let [k, v] of Object.entries(answers)) {
                     const f = fieldMap[k];
                     if (f && f.enableScoring && f.scores) {
                         isQuiz = true;
-                        if (f.type === 'checkbox' && Array.isArray(v)) { 
-                            v.forEach(val => { const idx = f.options.indexOf(val); if (idx > -1 && f.scores[idx]) totalScore += parseFloat(f.scores[idx]); }); 
-                        } else { 
-                            const idx = f.options.indexOf(v); if (idx > -1 && f.scores[idx]) totalScore += parseFloat(f.scores[idx]); 
-                        }
+                        if (f.type === 'checkbox' && Array.isArray(v)) { v.forEach(val => { const idx = f.options.indexOf(val); if (idx > -1 && f.scores[idx]) totalScore += parseFloat(f.scores[idx]); }); } 
+                        else { const idx = f.options.indexOf(v); if (idx > -1 && f.scores[idx]) totalScore += parseFloat(f.scores[idx]); }
                     }
                 }
                 if (isQuiz) answers['_total_score'] = totalScore;
 
-                // 3. Handoff to Supabase Edge Function for Processing, Webhooks, and Stripe
-                const payload = {
-                    regId,
-                    formId: this.formData.id,
-                    programmeId: this.formData.programme_id,
-                    formTitle: this.formData.schema.title,
-                    data: answers,
-                    totalAmount: paymentField ? paymentField.amount : 0,
-                    currency: paymentField ? paymentField.currency : 'USD'
-                };
-
-                const { data, error } = await supabase.functions.invoke('process-submission', {
-                    body: payload
-                });
-
+                const payload = { regId, formId: this.formData.id, programmeId: this.formData.programme_id, formTitle: this.formData.schema.title, data: answers, totalAmount: paymentField ? paymentField.amount : 0, currency: paymentField ? paymentField.currency : 'USD' };
+                const { data, error } = await supabase.functions.invoke('process-submission', { body: payload });
                 if (error) throw new Error(error.message || "Failed to contact processing server.");
                 if (data.error) throw new Error(data.error);
 
-                // 4. Cleanup and Redirect
-                if (this.sessionToken) {
-                    await supabase.from('saved_sessions').delete().eq('session_token', this.sessionToken);
-                }
+                if (this.sessionToken) await supabase.from('saved_sessions').delete().eq('session_token', this.sessionToken);
 
-                if (data.checkoutUrl) {
-                    // Redirect to Stripe
-                    window.location.href = data.checkoutUrl;
-                } else {
-                    // Standard Success Redirect
-                    window.location.href = `success.html?reg_id=${regId}&form=${encodeURIComponent(this.formData.schema.title)}`;
-                }
+                if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+                else window.location.href = `success.html?reg_id=${regId}&form=${encodeURIComponent(this.formData.schema.title)}`;
 
-            } catch (error) { 
-                alert('Submission failed: ' + error.message); 
-                btn.disabled = false; 
-                btn.textContent = 'Submit Form'; 
-            }
+            } catch (error) { alert('Submission failed: ' + error.message); btn.disabled = false; btn.textContent = 'Submit Form'; }
         });
     }
 
