@@ -111,6 +111,9 @@
                 <!-- Answers injected here -->
             </div>
             <div class="modal-footer" style="justify-content: space-between; align-items: center;">
+                <button class="btn btn-outline" id="deleteResponseBtn" style="color: var(--danger); border-color: var(--danger);">
+                    <i data-lucide="trash-2" style="width: 14px; vertical-align: middle;"></i> Delete Response
+                </button>
                 <div style="display:flex; align-items:center; gap: 12px;">
                     <label style="font-size: 0.875rem; font-weight: 500;">Update Status:</label>
                     <select id="statusSelect" class="form-control" style="width: auto; padding: 6px 12px;">
@@ -120,8 +123,8 @@
                         <option value="REJECTED">Rejected</option>
                         <option value="COMPLETED">Completed</option>
                     </select>
+                    <button class="btn btn-primary" id="saveStatusBtn">Update</button>
                 </div>
-                <button class="btn btn-primary" id="saveStatusBtn">Update</button>
             </div>
         </div>
     </div>
@@ -144,6 +147,11 @@
             },
             async updateStatus(responseId, newStatus) {
                 const { error } = await supabase.from('responses').update({ status: newStatus }).eq('id', responseId);
+                if (error) throw error;
+                return true;
+            },
+            async delete(responseId) {
+                const { error } = await supabase.from('responses').delete().eq('id', responseId);
                 if (error) throw error;
                 return true;
             }
@@ -176,6 +184,29 @@
             const filterForm = document.getElementById('filterForm');
             const filterStatus = document.getElementById('filterStatus');
             const searchInput = document.getElementById('searchInput');
+
+
+// Delete Response Logic from Modal
+            document.getElementById('deleteResponseBtn').addEventListener('click', async () => {
+                if (!activeResponseId) return;
+                if (!confirm("Are you sure you want to permanently delete this response? This action cannot be undone.")) return;
+
+                const btn = document.getElementById('deleteResponseBtn');
+                btn.disabled = true;
+                btn.textContent = 'Deleting...';
+
+                try {
+                    await ResponsesAPI.delete(activeResponseId);
+                    viewModal.classList.remove('active');
+                    await loadResponses(); // Refresh table
+                } catch (error) {
+                    alert('Failed to delete response: ' + error.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="trash-2" style="width: 14px; vertical-align: middle;"></i> Delete Response';
+                    lucide.createIcons();
+                }
+            });
 
             async function loadResponses() {
                 try {
