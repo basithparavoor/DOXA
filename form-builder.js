@@ -86,8 +86,32 @@ export class FormBuilder {
     }
 
     loadSchema(newSchema) {
-        this.schema = newSchema; this.titleInput.value = this.schema.title || 'Untitled Form'; this.descInput.value = this.schema.description || '';
-        this.selectedFieldIndex = null; this.applyTheme(); this.broadcastSchema();
+        // Safely merge incoming data with default theme settings to prevent crashes
+        this.schema = {
+            title: newSchema.title || 'Untitled Form',
+            description: newSchema.description || '',
+            theme: {
+                primaryColor: '#4F46E5', 
+                bgColor: '#F8FAFC', 
+                fieldBgColor: '#FFFFFF', 
+                fontFamily: 'Inter', 
+                headerImage: '', 
+                formLogo: '', 
+                borderRadius: '8px', 
+                textAlign: 'left',
+                ...(newSchema.theme || {}) // Override defaults if the JSON happens to include a theme
+            },
+            fields: newSchema.fields || []
+        };
+        
+        // Update UI
+        this.titleInput.value = this.schema.title;
+        this.descInput.value = this.schema.description;
+        this.selectedFieldIndex = null;
+        
+        // Re-render everything
+        this.applyTheme(); 
+        this.broadcastSchema();
     }
 
     async loadForm(id) {
