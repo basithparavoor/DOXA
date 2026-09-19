@@ -86,8 +86,9 @@
             <div class="reg-id" id="regIdDisplay">REG-XXXX-XXXX</div>
         </div>
 
-        <div style="display: flex; gap: 12px; justify-content: center;">
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
             <button class="btn" onclick="window.print()"><i data-lucide="printer"></i> Print Receipt</button>
+            <a href="#" id="newRegBtn" class="btn btn-primary" style="background: var(--primary); color: white; text-decoration: none;"><i data-lucide="plus-circle"></i> New Registration</a>
         </div>
     </div>
 
@@ -101,6 +102,16 @@
 
             if(regId) document.getElementById('regIdDisplay').textContent = regId;
             if(formName) document.getElementById('formNameDisplay').textContent = `Your response for "${formName}" has been securely recorded.`;
+
+            // Make the New Registration button point back to the public form using document.referrer or extracting from history
+            const newRegBtn = document.getElementById('newRegBtn');
+            // If the referrer is the public form, use it. Otherwise fallback to window.history.back or index
+            if (document.referrer && document.referrer.includes('public-form.html')) {
+                newRegBtn.href = document.referrer;
+            } else {
+                // Fallback: hide button if referrer isn't available, or let them go back
+                newRegBtn.style.display = 'none';
+            }
         });
     </script>
 </body>
