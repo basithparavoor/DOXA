@@ -9,7 +9,7 @@ export class FormBuilder {
             fields: []
         };
         this.selectedFieldIndex = null;
-        this.channel = null; // Supabase Realtime Channel
+        this.channel = null;
         this.myUserId = `admin_${Math.floor(Math.random() * 10000)}`;
 
         this.dropzone = document.getElementById('canvasDropzone');
@@ -28,14 +28,33 @@ export class FormBuilder {
             await this.loadForm(this.formId);
             this.initMultiplayer();
         }
-        this.bindHeaderInputs(); this.initDragAndDrop(); this.initTabs(); this.initThemeControls(); this.renderCanvas();
+        this.bindHeaderInputs(); 
+        this.initDragAndDrop(); 
+        this.initTapToAdd(); // NEW: Tap to add on mobile
+        this.initTabs(); 
+        this.initThemeControls(); 
+        this.renderCanvas();
     }
 
-    // NEW: Multiplayer Collaboration Engine
+    // Tap-to-add for mobile & desktop convenience
+    initTapToAdd() {
+        document.querySelectorAll('.draggable-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const type = item.dataset.type;
+                if (type) {
+                    this.addField(type);
+                    // On mobile screens, take user directly to Canvas to see their new field
+                    if (window.innerWidth <= 900 && window.switchMobileView) {
+                        window.switchMobileView('canvas');
+                    }
+                }
+            });
+        });
+    }
+
     initMultiplayer() {
         this.channel = supabase.channel(`form_builder_${this.formId}`);
 
-        // Listen for schema changes from other admins
         this.channel.on('broadcast', { event: 'schema_sync' }, (payload) => {
             this.schema = payload.schema;
             this.titleInput.value = this.schema.title;
@@ -45,27 +64,27 @@ export class FormBuilder {
             this.renderProperties();
         });
 
-        // Listen for remote cursors
         this.channel.on('broadcast', { event: 'cursor_move' }, (payload) => {
-            this.renderRemoteCursor(payload.userId, payload.x, payload.y);
+            if (window.innerWidth > 900) {
+                this.renderRemoteCursor(payload.userId, payload.x, payload.y);
+            }
         });
 
         this.channel.subscribe((status) => {
             if (status === 'SUBSCRIBED') {
                 const badge = document.getElementById('statusBadge');
                 if (badge) {
-                    badge.innerHTML = '<i data-lucide="users" style="width:12px; margin-right:4px;"></i> Live Co-Editing';
+                    badge.innerHTML = '<i data-lucide="users" style="width:12px; margin-right:4px;"></i> Live';
                     badge.className = 'badge badge-success';
                     lucide.createIcons();
                 }
             }
         });
 
-        // Broadcast local cursor movements (Throttled to 50ms)
         let lastMove = 0;
         document.addEventListener('mousemove', (e) => {
             const now = Date.now();
-            if (now - lastMove > 50 && this.channel) {
+            if (now - lastMove > 50 && this.channel && window.innerWidth > 900) {
                 lastMove = now;
                 this.channel.send({ type: 'broadcast', event: 'cursor_move', payload: { userId: this.myUserId, x: e.clientX, y: e.clientY } });
             }
@@ -93,7 +112,7 @@ export class FormBuilder {
         cursor.style.left = `${x}px`;
         cursor.style.top = `${y}px`;
         clearTimeout(cursor.timeout);
-        cursor.timeout = setTimeout(() => cursor.remove(), 3000); // Remove if inactive for 3s
+        cursor.timeout = setTimeout(() => cursor.remove(), 3000);
     }
 
     loadSchema(newSchema) {
@@ -198,32 +217,58 @@ export class FormBuilder {
         this.schema.fields.push(newField);
         this.selectedFieldIndex = this.schema.fields.length - 1;
         document.querySelector('.sidebar-tab[data-target="propertiesPanel"]').click();
-        this.renderCanvas(); this.renderProperties();
+        this.renderCanvas(); 
+        this.renderProperties();
+        this.broadcastSchema();
+    }
+
+    moveField(index, direction) {
+        const targetIndex = index + direction;
+        if (targetIndex < 0 || targetIndex >= this.schema.fields.length) return;
+        const [movedItem] = this.schema.fields.splice(index, 1);
+        this.schema.fields.splice(targetIndex, 0, movedItem);
+        this.selectedFieldIndex = targetIndex;
+        this.renderCanvas();
+        this.renderProperties();
         this.broadcastSchema();
     }
 
     deleteField(index) { 
         this.schema.fields.splice(index, 1); 
         this.selectedFieldIndex = null; 
-        this.renderCanvas(); this.renderProperties(); 
+        this.renderCanvas(); 
+        this.renderProperties(); 
         this.broadcastSchema();
     }
 
     renderCanvas() {
         this.dropzone.innerHTML = '';
-        if (this.schema.fields.length === 0) return this.dropzone.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-light); border: 2px dashed var(--border-light);">Drag fields here</div>`;
+        if (this.schema.fields.length === 0) return this.dropzone.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-light); border: 2px dashed var(--border-light); border-radius: var(--radius-md);">Tap <strong>+ Elements</strong> to add your first question</div>`;
 
         this.schema.fields.forEach((field, index) => {
             const fieldEl = document.createElement('div');
-            fieldEl.draggable = true; fieldEl.style.backgroundColor = this.schema.theme.fieldBgColor; fieldEl.style.borderRadius = this.schema.theme.borderRadius; fieldEl.style.textAlign = field.align || this.schema.theme.textAlign;
+            fieldEl.draggable = true; 
+            fieldEl.style.backgroundColor = this.schema.theme.fieldBgColor; 
+            fieldEl.style.borderRadius = this.schema.theme.borderRadius; 
+            fieldEl.style.textAlign = field.align || this.schema.theme.textAlign;
             
             const logicBadge = (field.logic && field.logic.fieldId) ? `<div style="font-size: 0.7rem; color: var(--primary); font-weight: 600; margin-bottom: 4px;"><i data-lucide="git-branch" style="width:12px;"></i> Conditional Logic</div>` : '';
             const scoreBadge = field.enableScoring ? `<div style="font-size: 0.7rem; color: #10B981; font-weight: 600; margin-bottom: 4px;"><i data-lucide="check-circle" style="width:12px;"></i> Quiz Scoring Active</div>` : '';
 
+            // Action toolbar (includes Move Up/Down buttons for mobile accessibility)
+            const actionsHtml = `
+                <div class="field-actions" style="display:flex; align-items:center; gap:2px;">
+                    <button type="button" class="icon-btn move-up-btn" title="Move Up" ${index === 0 ? 'disabled style="opacity:0.3;"' : ''}><i data-lucide="chevron-up"></i></button>
+                    <button type="button" class="icon-btn move-down-btn" title="Move Down" ${index === this.schema.fields.length - 1 ? 'disabled style="opacity:0.3;"' : ''}><i data-lucide="chevron-down"></i></button>
+                    <i data-lucide="grip-vertical" style="cursor:grab; padding: 4px; color: var(--text-muted);" class="desktop-only-grip"></i>
+                    <button type="button" class="icon-btn delete-btn" title="Delete" style="color:var(--danger);"><i data-lucide="trash-2"></i></button>
+                </div>
+            `;
+
             if (field.type === 'section') {
                 fieldEl.className = `canvas-section-break ${this.selectedFieldIndex === index ? 'selected' : ''}`;
                 fieldEl.style.backgroundColor = this.schema.theme.primaryColor; fieldEl.style.color = '#fff';
-                fieldEl.innerHTML = `<div style="display: flex; justify-content: space-between; width: 100%;"><span><i data-lucide="layers" style="width:16px; margin-right:8px; vertical-align:middle;"></i> ${field.label}</span><div class="field-actions" style="position:static; display:flex; box-shadow:none; background:transparent; border:none;"><i data-lucide="grip-vertical" style="cursor:grab; margin-right:8px; opacity:0.7;"></i><button class="icon-btn delete-btn" style="color:white; padding:0;"><i data-lucide="trash-2"></i></button></div></div>${field.description ? `<p style="font-size:0.8rem; margin-top:8px; opacity:0.9;">${field.description}</p>` : ''}`;
+                fieldEl.innerHTML = `<div style="display: flex; justify-content: space-between; width: 100%; align-items: center;"><span><i data-lucide="layers" style="width:16px; margin-right:8px; vertical-align:middle;"></i> ${field.label}</span>${actionsHtml}</div>${field.description ? `<p style="font-size:0.8rem; margin-top:8px; opacity:0.9;">${field.description}</p>` : ''}`;
             } else {
                 fieldEl.className = `canvas-field ${this.selectedFieldIndex === index ? 'selected' : ''}`;
                 if (this.selectedFieldIndex === index) fieldEl.style.borderColor = this.schema.theme.primaryColor;
@@ -240,7 +285,7 @@ export class FormBuilder {
                 else if (field.type === 'matrix') { inputPreview = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:0.85rem;"><thead><tr><th></th>${field.columns.map(c => `<th style="text-align:center; padding:8px; color:var(--text-muted);">${c}</th>`).join('')}</tr></thead><tbody>${field.rows.map(r => `<tr><td style="padding:8px; border-top:1px solid var(--border-light);">${r}</td>${field.columns.map(() => `<td style="text-align:center; padding:8px; border-top:1px solid var(--border-light);"><input type="radio" disabled></td>`).join('')}</tr>`).join('')}</tbody></table></div>`; }
 
                 fieldEl.innerHTML = `
-                    <div class="field-actions"><i data-lucide="grip-vertical" style="cursor:grab; padding: 4px; color: var(--text-muted);"></i><button class="icon-btn delete-btn" title="Delete"><i data-lucide="trash-2"></i></button></div>
+                    ${actionsHtml}
                     ${logicBadge} ${scoreBadge}
                     <label style="display:block; font-weight:600; margin-bottom:8px; font-size: 0.95rem;">${field.label} ${field.required ? '<span style="color:var(--danger)">*</span>' : ''}</label>
                     ${field.description ? `<p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">${field.description}</p>` : ''}
@@ -249,6 +294,7 @@ export class FormBuilder {
                 `;
             }
 
+            // Desktop Drag Handlers
             fieldEl.addEventListener('dragstart', (e) => { e.stopPropagation(); e.dataTransfer.setData('sourceIndex', index); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => fieldEl.classList.add('dragging'), 0); });
             fieldEl.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); const dragging = document.querySelector('.dragging'); if (dragging && dragging !== fieldEl) fieldEl.classList.add('drag-over-target'); });
             fieldEl.addEventListener('dragleave', () => fieldEl.classList.remove('drag-over-target'));
@@ -262,7 +308,22 @@ export class FormBuilder {
                 }
             });
             fieldEl.addEventListener('dragend', () => fieldEl.classList.remove('dragging'));
-            fieldEl.addEventListener('click', (e) => { if(!e.target.closest('.field-actions')) { this.selectedFieldIndex = index; this.renderCanvas(); this.renderProperties(); } });
+
+            // Click to Select & Auto-Switch to Settings on Mobile
+            fieldEl.addEventListener('click', (e) => { 
+                if (!e.target.closest('.field-actions')) { 
+                    this.selectedFieldIndex = index; 
+                    this.renderCanvas(); 
+                    this.renderProperties(); 
+                    if (window.innerWidth <= 900 && window.switchMobileView) {
+                        window.switchMobileView('properties');
+                    }
+                } 
+            });
+
+            // Action Buttons
+            fieldEl.querySelector('.move-up-btn').addEventListener('click', (e) => { e.stopPropagation(); this.moveField(index, -1); });
+            fieldEl.querySelector('.move-down-btn').addEventListener('click', (e) => { e.stopPropagation(); this.moveField(index, 1); });
             fieldEl.querySelector('.delete-btn').addEventListener('click', (e) => { e.stopPropagation(); this.deleteField(index); });
 
             this.dropzone.appendChild(fieldEl);
@@ -271,7 +332,11 @@ export class FormBuilder {
     }
 
     renderProperties() {
-        if (this.selectedFieldIndex === null) { this.propertiesPanel.innerHTML = `<div class="empty-properties"><i data-lucide="settings" style="width:32px;height:32px;"></i><p>Select a field to edit</p></div>`; lucide.createIcons(); return; }
+        if (this.selectedFieldIndex === null) { 
+            this.propertiesPanel.innerHTML = `<div class="empty-properties"><i data-lucide="settings" style="width:32px;height:32px;"></i><p>Select any question on the canvas to configure it.</p></div>`; 
+            lucide.createIcons(); 
+            return; 
+        }
 
         const field = this.schema.fields[this.selectedFieldIndex];
         let html = `
@@ -304,7 +369,7 @@ export class FormBuilder {
 
         if (field.type === 'payment') {
             html += `<div class="form-group" style="margin-top: 16px;"><label>Amount</label><input type="number" class="form-control prop-amount" value="${field.amount || 0}"></div>
-                     <div class="form-group" style="margin-top: 16px;"><label>Currency (e.g. USD, GBP, EUR)</label><input type="text" class="form-control prop-currency" value="${field.currency || 'USD'}"></div>`;
+                     <div class="form-group" style="margin-top: 16px;"><label>Currency</label><input type="text" class="form-control prop-currency" value="${field.currency || 'USD'}"></div>`;
         }
 
         if (['radio', 'select', 'checkbox'].includes(field.type)) {
@@ -320,7 +385,8 @@ export class FormBuilder {
             html += `<div class="form-group" style="display:flex; align-items:center; gap:8px; margin-top: 16px; padding: 12px; background: var(--bg-surface-hover); border-radius: var(--radius-md);"><input type="checkbox" class="prop-required" ${field.required ? 'checked' : ''} style="width: 18px; height: 18px;"><label style="margin:0; font-weight: 600;">Required field</label></div>`;
         }
 
-        this.propertiesPanel.innerHTML = html; lucide.createIcons();
+        this.propertiesPanel.innerHTML = html; 
+        lucide.createIcons();
 
         const bindAndBroadcast = (selector, eventType, callback) => {
             const el = this.propertiesPanel.querySelector(selector);
@@ -331,7 +397,7 @@ export class FormBuilder {
         bindAndBroadcast('.prop-desc', 'input', (e) => field.description = e.target.value);
         bindAndBroadcast('.prop-required', 'change', (e) => field.required = e.target.checked);
         
-        const logicFieldEl = this.propertiesPanel.querySelector('.prop-logic-field');
+        const logicFieldEl = this.propertiesPanel.querySelector('.prop-logic-field'); 
         const logicValueEl = this.propertiesPanel.querySelector('.prop-logic-value');
         if (logicFieldEl) logicFieldEl.addEventListener('change', (e) => { if (!field.logic) field.logic = {}; field.logic.fieldId = e.target.value; logicValueEl.style.display = e.target.value ? 'block' : 'none'; this.renderCanvas(); this.broadcastSchema(); });
         if (logicValueEl) logicValueEl.addEventListener('input', (e) => { if (!field.logic) field.logic = {}; field.logic.value = e.target.value; this.broadcastSchema(); });
@@ -355,5 +421,6 @@ export class FormBuilder {
             }); 
         });
     }
+    
     getSchema() { return this.schema; }
 }

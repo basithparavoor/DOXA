@@ -52,9 +52,15 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="top-header">
-                <div class="search-bar"></div>
-            </header>
+           <header class="top-header">
+    <button id="mobileMenuBtn" class="btn btn-outline mobile-menu-btn" style="display: none; padding: 8px; border: none; box-shadow: none;">
+        <i data-lucide="menu"></i>
+    </button>
+    <div class="search-bar">
+        <i data-lucide="search" style="color: var(--text-light); width: 16px;"></i>
+        <input type="text" id="searchInput" placeholder="Search...">
+    </div>
+</header>
 
             <div class="page-content">
                 <div class="page-header">
@@ -313,6 +319,28 @@
                 });
             }
         });
+
+
+// Mobile Sidebar Toggle Logic
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const sidebar = document.querySelector('.sidebar');
+
+if (mobileMenuBtn && sidebar) {
+    mobileMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebar.classList.toggle('active');
+    });
+
+    // Close sidebar when tapping outside of it on mobile screens
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
+            if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                sidebar.classList.remove('active');
+            }
+        }
+    });
+}
+
     </script>
 </body>
 </html>

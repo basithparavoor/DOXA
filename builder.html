@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Form Builder | DOXA</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Lora&family=Montserrat&display=swap" rel="stylesheet">
@@ -10,25 +10,164 @@
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="builder.css">
     <link rel="stylesheet" href="components.css">
+    <style>
+        /* Mobile Builder Responsive Scaffolding */
+        .mobile-builder-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #fff;
+            border-top: 1px solid var(--border-light);
+            z-index: 999;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .mobile-nav-tab {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            background: none;
+            border: none;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mobile-nav-tab.active {
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.04);
+        }
+
+        .mobile-back-to-canvas {
+            display: none;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 16px;
+            background: var(--bg-surface-hover);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--primary);
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 900px) {
+            .mobile-builder-nav {
+                display: flex;
+            }
+
+            .mobile-back-to-canvas {
+                display: flex;
+            }
+
+            .builder-container {
+                position: relative;
+                overflow-x: hidden;
+                padding-bottom: 70px; /* space for bottom nav */
+                min-height: calc(100vh - 60px);
+            }
+
+            /* Responsive 3-Panel Switcher */
+            .builder-sidebar-left,
+            .builder-canvas,
+            .builder-sidebar-right {
+                display: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+            }
+
+            /* Active Panel Display */
+            .builder-container[data-mobile-view="elements"] .builder-sidebar-left {
+                display: block !important;
+                padding: 16px;
+            }
+
+            .builder-container[data-mobile-view="canvas"] .builder-canvas {
+                display: block !important;
+                padding: 16px 8px;
+            }
+
+            .builder-container[data-mobile-view="properties"] .builder-sidebar-right {
+                display: block !important;
+                padding: 16px;
+            }
+
+            /* Header adjustments for small viewports */
+            .top-header {
+                padding: 10px 14px;
+                gap: 8px;
+            }
+
+            .top-header .header-actions {
+                gap: 6px;
+            }
+
+            .top-header .btn {
+                padding: 8px 10px;
+                font-size: 0.8rem;
+            }
+
+            .top-header .btn span {
+                display: none; /* Icon-only on mobile for secondary buttons */
+            }
+
+            #saveBtn span {
+                display: inline; /* Keep 'Save' text visible */
+            }
+
+            .form-paper {
+                box-shadow: none;
+                border-radius: 0;
+                border: none;
+                padding: 16px 12px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="app-container" style="flex-direction: column;">
         <header class="top-header" style="border-bottom: 1px solid var(--border-light); z-index: 10;">
-            <div style="display:flex; align-items:center; gap:16px;">
-                <button class="icon-btn" onclick="window.location.href='forms.html'" title="Back to Forms"><i data-lucide="arrow-left"></i></button>
-                <div style="font-weight:600; color:var(--text-main);">Form Builder <span class="badge badge-warning" style="margin-left:8px;" id="statusBadge">Draft</span></div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <button class="icon-btn" onclick="window.location.href='forms.html'" title="Back to Forms">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <div style="font-weight:600; font-size: 0.95rem; color:var(--text-main);">
+                    Builder <span class="badge badge-warning" style="margin-left:4px;" id="statusBadge">Draft</span>
+                </div>
             </div>
             <div class="header-actions">
-                <button class="btn btn-outline" id="versionHistoryBtn"><i data-lucide="history"></i> History</button>
-                <button class="btn btn-outline" id="previewBtn"><i data-lucide="eye"></i> Preview</button>
-                <button class="btn btn-outline" id="shareBtn"><i data-lucide="share-2"></i> Share</button>
-                <button class="btn btn-primary" id="saveBtn"><i data-lucide="save"></i> Save Form</button>
+                <button class="btn btn-outline" id="versionHistoryBtn" title="History"><i data-lucide="history"></i> <span>History</span></button>
+                <button class="btn btn-outline" id="previewBtn" title="Preview"><i data-lucide="eye"></i> <span>Preview</span></button>
+                <button class="btn btn-outline" id="shareBtn" title="Share"><i data-lucide="share-2"></i> <span>Share</span></button>
+                <button class="btn btn-primary" id="saveBtn"><i data-lucide="save"></i> <span>Save</span></button>
             </div>
         </header>
 
-        <div class="builder-container">
+        <!-- Builder Workspace (Defaults to 'canvas' on mobile) -->
+        <div class="builder-container" data-mobile-view="canvas">
+            
+            <!-- 1. Left: Elements Library -->
             <aside class="builder-sidebar-left">
-                <div class="panel-header">Form Elements</div>
+                <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Tap or Drag Element</span>
+                    <span style="font-size:0.75rem; color: var(--text-muted);">Click to Add</span>
+                </div>
                 <div class="field-library">
                     <div class="field-category">Layout</div>
                     <div class="draggable-item" draggable="true" data-type="section"><i data-lucide="layers"></i> Section Break</div>
@@ -55,11 +194,12 @@
                 </div>
             </aside>
 
+            <!-- 2. Center: Canvas -->
             <main class="builder-canvas">
                 <div class="form-paper" id="formPaper">
                     <img id="canvasHeaderImage" class="canvas-header-image" src="" alt="Header">
-                    <div class="form-header" style="margin-top: 32px; position: relative;">
-                        <img id="canvasFormLogo" src="" alt="Custom Logo" style="height: 60px; object-fit: contain; margin-bottom: 16px; display: none;">
+                    <div class="form-header" style="margin-top: 24px; position: relative;">
+                        <img id="canvasFormLogo" src="" alt="Custom Logo" style="height: 50px; object-fit: contain; margin-bottom: 12px; display: none;">
                         <input type="text" id="formTitleInput" class="form-title-input" value="Untitled Form" placeholder="Form Title">
                         <textarea id="formDescInput" class="form-desc-input" placeholder="Enter a description for this form..."></textarea>
                     </div>
@@ -67,7 +207,11 @@
                 </div>
             </main>
 
+            <!-- 3. Right: Settings & Theme -->
             <aside class="builder-sidebar-right">
+                <button type="button" class="mobile-back-to-canvas" id="mobileBackToCanvasBtn">
+                    <i data-lucide="arrow-left" style="width:16px;"></i> Back to Form Canvas
+                </button>
                 <div class="sidebar-tabs">
                     <div class="sidebar-tab active" data-target="propertiesPanel">Properties</div>
                     <div class="sidebar-tab" data-target="themePanel">Design</div>
@@ -112,6 +256,22 @@
                 </div>
             </aside>
         </div>
+
+        <!-- Mobile Bottom Nav Bar -->
+        <nav class="mobile-builder-nav">
+            <button class="mobile-nav-tab" data-view="elements">
+                <i data-lucide="plus-circle" style="width:20px; height:20px;"></i>
+                <span>Elements</span>
+            </button>
+            <button class="mobile-nav-tab active" data-view="canvas">
+                <i data-lucide="layout" style="width:20px; height:20px;"></i>
+                <span>Canvas</span>
+            </button>
+            <button class="mobile-nav-tab" data-view="properties">
+                <i data-lucide="sliders" style="width:20px; height:20px;"></i>
+                <span>Settings</span>
+            </button>
+        </nav>
     </div>
 
     <!-- Modals -->
@@ -132,10 +292,35 @@
             const builder = new FormBuilder(formId);
             let currentSlug = '';
 
-            if (formId) { const { data } = await supabase.from('forms').select('slug').eq('id', formId).single(); if (data) currentSlug = data.slug; }
+            // Mobile View Switcher Logic
+            const container = document.querySelector('.builder-container');
+            const tabs = document.querySelectorAll('.mobile-nav-tab');
 
+            window.switchMobileView = function(viewName) {
+                container.dataset.mobileView = viewName;
+                tabs.forEach(t => t.classList.toggle('active', t.dataset.view === viewName));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                lucide.createIcons();
+            };
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => switchMobileView(tab.dataset.view));
+            });
+
+            document.getElementById('mobileBackToCanvasBtn').addEventListener('click', () => {
+                switchMobileView('canvas');
+            });
+
+            if (formId) {
+                const { data } = await supabase.from('forms').select('slug').eq('id', formId).single();
+                if (data) currentSlug = data.slug;
+            }
+
+            // Save Form
             document.getElementById('saveBtn').addEventListener('click', async () => {
-                const btn = document.getElementById('saveBtn'); btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Saving...'; btn.disabled = true;
+                const btn = document.getElementById('saveBtn'); 
+                btn.innerHTML = '<i data-lucide="loader" class="spin"></i> <span>Saving...</span>'; 
+                btn.disabled = true;
                 try {
                     const finalSchema = builder.getSchema();
                     const payload = { title: finalSchema.title, description: finalSchema.description, schema: finalSchema, status: 'PUBLISHED' };
@@ -143,38 +328,64 @@
                         await supabase.from('forms').update(payload).eq('id', formId);
                         await supabase.from('form_versions').insert([{ form_id: formId, schema: finalSchema, version_note: 'Manual Update' }]);
                     } else {
-                        payload.slug = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random()*1000); payload.programme_id = progId; 
+                        payload.slug = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random()*1000); 
+                        payload.programme_id = progId; 
                         const { data } = await supabase.from('forms').insert([payload]).select().single();
                         currentSlug = data.slug; formId = data.id;
                         window.history.replaceState({}, '', `?id=${data.id}&prog_id=${progId}`);
                         await supabase.from('form_versions').insert([{ form_id: formId, schema: finalSchema, version_note: 'Initial Creation' }]);
                     }
-                    document.getElementById('statusBadge').textContent = 'Saved'; document.getElementById('statusBadge').className = 'badge badge-success';
+                    document.getElementById('statusBadge').textContent = 'Saved'; 
+                    document.getElementById('statusBadge').className = 'badge badge-success';
                 } catch (error) { alert('Error saving form: ' + error.message); } 
-                finally { btn.innerHTML = '<i data-lucide="save"></i> Save Form'; btn.disabled = false; lucide.createIcons(); }
+                finally { btn.innerHTML = '<i data-lucide="save"></i> <span>Save</span>'; btn.disabled = false; lucide.createIcons(); }
             });
 
+            // Version History Modal
             const historyModal = document.getElementById('historyModal');
             document.getElementById('versionHistoryBtn').addEventListener('click', async () => {
                 if (!formId) return alert("Please save the form at least once to generate history.");
-                historyModal.classList.add('active'); const list = document.getElementById('historyList'); list.innerHTML = '<div style="text-align:center;"><i data-lucide="loader" class="spin"></i></div>'; lucide.createIcons();
+                historyModal.classList.add('active'); 
+                const list = document.getElementById('historyList'); 
+                list.innerHTML = '<div style="text-align:center;"><i data-lucide="loader" class="spin"></i></div>'; 
+                lucide.createIcons();
                 const { data, error } = await supabase.from('form_versions').select('*').eq('form_id', formId).order('created_at', { ascending: false });
                 if (error) return list.innerHTML = `<div style="color:red;">Failed to load history.</div>`;
                 if (data.length === 0) return list.innerHTML = `<div style="color:var(--text-muted);">No version history found.</div>`;
                 list.innerHTML = '';
                 data.forEach((v, idx) => {
-                    const date = new Date(v.created_at).toLocaleString(); const isLatest = idx === 0 ? '<span class="badge badge-success" style="font-size:0.6rem; padding: 2px 4px;">Latest</span>' : '';
+                    const date = new Date(v.created_at).toLocaleString(); 
+                    const isLatest = idx === 0 ? '<span class="badge badge-success" style="font-size:0.6rem; padding: 2px 4px;">Latest</span>' : '';
                     list.innerHTML += `<div style="padding: 12px; border: 1px solid var(--border-light); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; background: #fff;"><div><div style="font-weight: 600; font-size: 0.9rem;">${date} ${isLatest}</div><div style="font-size: 0.8rem; color: var(--text-muted);">${v.version_note}</div></div><button class="btn btn-outline restore-btn" data-id="${v.id}" style="padding: 4px 8px; font-size: 0.75rem;">Restore</button></div>`;
                 });
-                document.querySelectorAll('.restore-btn').forEach(btn => { btn.addEventListener('click', () => { if(!confirm('Restore this version? Unsaved changes will be lost.')) return; const version = data.find(d => d.id === btn.dataset.id); builder.loadSchema(version.schema); historyModal.classList.remove('active'); }); });
+                document.querySelectorAll('.restore-btn').forEach(btn => { 
+                    btn.addEventListener('click', () => { 
+                        if(!confirm('Restore this version? Unsaved changes will be lost.')) return; 
+                        const version = data.find(d => d.id === btn.dataset.id); 
+                        builder.loadSchema(version.schema); 
+                        historyModal.classList.remove('active'); 
+                    }); 
+                });
             });
             document.getElementById('closeHistoryBtn').addEventListener('click', () => historyModal.classList.remove('active'));
 
-            document.getElementById('previewBtn').addEventListener('click', () => { if (!currentSlug) return alert("Please Save the form at least once before previewing."); window.open(window.location.origin + '/public-form.html?slug=' + currentSlug, '_blank'); });
+            document.getElementById('previewBtn').addEventListener('click', () => { 
+                if (!currentSlug) return alert("Please Save the form at least once before previewing."); 
+                window.open(window.location.origin + '/public-form.html?slug=' + currentSlug, '_blank'); 
+            });
             const shareModal = document.getElementById('shareModal');
-            document.getElementById('shareBtn').addEventListener('click', () => { if (!currentSlug) return alert("Please Save the form before sharing."); document.getElementById('shareUrlInput').value = window.location.origin + '/public-form.html?slug=' + currentSlug; shareModal.classList.add('active'); });
+            document.getElementById('shareBtn').addEventListener('click', () => { 
+                if (!currentSlug) return alert("Please Save the form before sharing."); 
+                document.getElementById('shareUrlInput').value = window.location.origin + '/public-form.html?slug=' + currentSlug; 
+                shareModal.classList.add('active'); 
+            });
             document.getElementById('closeShareBtn').addEventListener('click', () => shareModal.classList.remove('active'));
-            document.getElementById('copyShareBtn').addEventListener('click', () => { document.getElementById('shareUrlInput').select(); document.execCommand('copy'); document.getElementById('shareStatusText').style.display = 'block'; setTimeout(() => document.getElementById('shareStatusText').style.display = 'none', 3000); });
+            document.getElementById('copyShareBtn').addEventListener('click', () => { 
+                document.getElementById('shareUrlInput').select(); 
+                document.execCommand('copy'); 
+                document.getElementById('shareStatusText').style.display = 'block'; 
+                setTimeout(() => document.getElementById('shareStatusText').style.display = 'none', 3000); 
+            });
         });
     </script>
 </body>
