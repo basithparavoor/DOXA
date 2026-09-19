@@ -11,21 +11,24 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px; margin-top: 24px; }
-        .chart-card { background: var(--bg-surface); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
-        .chart-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
+        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-top: 24px; }
+        .chart-card { background: var(--bg-surface); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; transition: box-shadow 0.2s; }
+        .chart-card:hover { box-shadow: var(--shadow-md); }
+        .chart-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main); }
         .chart-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px; }
-        .chart-canvas-wrapper { position: relative; flex: 1; min-height: 250px; width: 100%; }
+        .chart-canvas-wrapper { position: relative; flex: 1; min-height: 280px; width: 100%; }
         
-        .metric-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .metric-card { background: var(--bg-surface); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); text-align: center; }
-        .metric-val { font-size: 2rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-        .metric-label { font-size: 0.875rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        .metric-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 32px; }
+        .metric-card { background: var(--bg-surface); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); display: flex; align-items: center; gap: 16px; }
+        .metric-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; }
+        .metric-info { display: flex; flex-direction: column; }
+        .metric-val { font-size: 1.75rem; font-weight: 700; color: var(--text-main); line-height: 1.2; }
+        .metric-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         
         @media print {
             .sidebar, .top-header, .page-actions, .form-selector-area { display: none !important; }
             .main-content { margin: 0; padding: 0; }
-            .chart-card { break-inside: avoid; page-break-inside: avoid; }
+            .chart-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; box-shadow: none; }
         }
     </style>
 </head>
@@ -68,160 +71,212 @@
 </header>
 
             <div class="page-content">
-                <div class="page-header">
-                    <div class="page-title">
-                        <h1>Form Analytics & Insights</h1>
-                    </div>
-                    <div class="page-actions">
-                        <button class="btn btn-outline" onclick="window.print()"><i data-lucide="printer"></i> Print Report</button>
-                    </div>
-                </div>
+        <div class="page-header">
+            <div class="page-title">
+                <h1>Analytics & Insights</h1>
+                <p style="color: var(--text-muted); margin-top: 4px;">Monitor platform usage, form performance, and workflow statuses.</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-outline" onclick="window.print()"><i data-lucide="printer"></i> Print Report</button>
+            </div>
+        </div>
 
-                <div class="form-selector-area" style="background: var(--bg-surface-hover); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); margin-bottom: 24px;">
-                    <label style="font-weight: 600; margin-right: 12px; color: var(--text-main);">Select Form to Analyze:</label>
-                    <select id="formSelector" class="form-control" style="max-width: 400px; display: inline-block; font-size: 1rem;">
-                        <option value="">Loading forms...</option>
-                    </select>
-                </div>
+        <div class="form-selector-area" style="background: var(--bg-surface-hover); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
+            <label style="font-weight: 600; color: var(--text-main);"><i data-lucide="filter" style="width: 18px; vertical-align: middle; margin-right: 4px;"></i> Filter by Form:</label>
+            <select id="formSelector" class="form-control" style="max-width: 400px; flex: 1; font-size: 1rem;">
+                <option value="">Loading forms...</option>
+            </select>
+            <button class="btn btn-outline" id="resetGlobalBtn" style="display: none;">Clear Filter</button>
+        </div>
 
-                <!-- High-level Metrics -->
-                <div class="metric-cards" id="metricsBar">
-                    <div class="metric-card"><div class="metric-val">-</div><div class="metric-label">Total Submissions</div></div>
+        <!-- GLOBAL DASHBOARD (Shows when no form is selected) -->
+        <div id="globalDashboard">
+            <h2 style="font-size: 1.25rem; margin-bottom: 16px; color: var(--text-main);">Platform Overview</h2>
+            <div class="metric-cards" id="globalMetricsBar">
+                <div class="metric-card"><div class="metric-icon"><i data-lucide="inbox"></i></div><div class="metric-info"><div class="metric-val" id="glbTotalSub">0</div><div class="metric-label">Total Submissions</div></div></div>
+                <div class="metric-card"><div class="metric-icon"><i data-lucide="file-text"></i></div><div class="metric-info"><div class="metric-val" id="glbActiveForms">0</div><div class="metric-label">Active Forms</div></div></div>
+                <div class="metric-card"><div class="metric-icon"><i data-lucide="check-circle"></i></div><div class="metric-info"><div class="metric-val" id="glbApproved">0</div><div class="metric-label">Approved Applications</div></div></div>
+            </div>
+            <div class="analytics-grid">
+                <div class="chart-card">
+                    <div class="chart-title">Platform Activity (Last 7 Days)</div>
+                    <div class="chart-desc">Total submission volume across all forms</div>
+                    <div class="chart-canvas-wrapper"><canvas id="chart_global_trend"></canvas></div>
                 </div>
-
-                <!-- Time Series Chart -->
-                <div class="chart-card" id="timeSeriesCard" style="display: none; margin-bottom: 24px;">
-                    <div class="chart-title">Submissions Over Time</div>
-                    <div class="chart-canvas-wrapper" style="min-height: 300px;"><canvas id="chart_timeseries"></canvas></div>
-                </div>
-
-                <!-- Individual Question Charts -->
-                <div class="analytics-grid" id="chartContainer">
-                    <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 60px; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-lg);">
-                        <i data-lucide="bar-chart-2" style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                        <p>Select a form above to generate visual analytics.</p>
-                    </div>
+                <div class="chart-card">
+                    <div class="chart-title">Global Pipeline Status</div>
+                    <div class="chart-desc">Distribution of all responses by review state</div>
+                    <div class="chart-canvas-wrapper"><canvas id="chart_global_status"></canvas></div>
                 </div>
             </div>
+        </div>
+
+        <!-- FORM SPECIFIC DASHBOARD (Shows when a form is selected) -->
+        <div id="formDashboard" style="display: none;">
+            <h2 style="font-size: 1.25rem; margin-bottom: 16px; color: var(--text-main);" id="specificFormTitle">Form Metrics</h2>
+            <div class="metric-cards" id="metricsBar"></div>
+
+            <div class="analytics-grid">
+                <!-- Status & Time charts on top row -->
+                <div class="chart-card" id="formStatusCard">
+                    <div class="chart-title">Submission Status</div>
+                    <div class="chart-desc">Current review pipeline for this form</div>
+                    <div class="chart-canvas-wrapper"><canvas id="chart_form_status"></canvas></div>
+                </div>
+                <div class="chart-card" id="timeSeriesCard">
+                    <div class="chart-title">Submissions Over Time</div>
+                    <div class="chart-desc">Daily submission volume</div>
+                    <div class="chart-canvas-wrapper"><canvas id="chart_timeseries"></canvas></div>
+                </div>
+            </div>
+
+            <h3 style="font-size: 1.1rem; margin: 32px 0 16px; color: var(--text-main); border-bottom: 1px solid var(--border-light); padding-bottom: 8px;">Question Breakdown</h3>
+            <div class="analytics-grid" id="chartContainer"></div>
+        </div>
+    </div>
         </main>
     </div>
 
     <script type="module">
         import { supabase } from './config.js';
+        import { AnalyticsAPI } from './analytics.js'; // Import the external logic
 
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
             const formSelector = document.getElementById('formSelector');
+            const resetGlobalBtn = document.getElementById('resetGlobalBtn');
+            const globalDashboard = document.getElementById('globalDashboard');
+            const formDashboard = document.getElementById('formDashboard');
             const chartContainer = document.getElementById('chartContainer');
             const metricsBar = document.getElementById('metricsBar');
-            const timeSeriesCard = document.getElementById('timeSeriesCard');
-            let chartInstances = [];
+            
+            let globalChartInstances = [];
+            let formChartInstances = [];
 
             // Universal Chart.js Settings
             Chart.defaults.font.family = "'Inter', sans-serif";
             Chart.defaults.color = '#64748b';
             const colorPalette = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6', '#EC4899', '#14B8A6'];
+            const statusColors = { 'SUBMITTED': '#3B82F6', 'UNDER_REVIEW': '#F59E0B', 'APPROVED': '#10B981', 'REJECTED': '#EF4444', 'COMPLETED': '#8B5CF6' };
 
-            // 1. Load Published Forms
-            const { data: forms, error } = await supabase.from('forms').select('id, title, schema').eq('status', 'PUBLISHED').order('created_at', { ascending: false });
-            if (error) {
-                formSelector.innerHTML = '<option value="">Error loading forms</option>';
-                return;
+            // 1. Initialize Global Analytics
+            async function initGlobalAnalytics() {
+                try {
+                    const stats = await AnalyticsAPI.getGlobalStats();
+                    
+                    document.getElementById('glbTotalSub').textContent = stats.totalSubmissions;
+                    document.getElementById('glbActiveForms').textContent = stats.activeForms;
+                    document.getElementById('glbApproved').textContent = stats.statusCounts['APPROVED'] || 0;
+
+                    globalChartInstances.forEach(c => c.destroy()); globalChartInstances = [];
+
+                    // Global Trend Line Chart
+                    const ctxTrend = document.getElementById('chart_global_trend').getContext('2d');
+                    globalChartInstances.push(new Chart(ctxTrend, {
+                        type: 'line',
+                        data: {
+                            labels: Object.keys(stats.trendData).map(d => new Date(d).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})),
+                            datasets: [{ label: 'Submissions', data: Object.values(stats.trendData), borderColor: colorPalette[0], backgroundColor: colorPalette[0] + '20', borderWidth: 3, fill: true, tension: 0.4 }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+                    }));
+
+                    // Global Status Doughnut Chart
+                    const ctxStatus = document.getElementById('chart_global_status').getContext('2d');
+                    const statusLabels = Object.keys(stats.statusCounts).filter(k => stats.statusCounts[k] > 0);
+                    const statusData = statusLabels.map(k => stats.statusCounts[k]);
+                    
+                    globalChartInstances.push(new Chart(ctxStatus, {
+                        type: 'doughnut',
+                        data: {
+                            labels: statusLabels.map(s => s.replace('_', ' ')),
+                            datasets: [{ data: statusData, backgroundColor: statusLabels.map(s => statusColors[s] || colorPalette[0]), borderWidth: 1 }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'right' } } }
+                    }));
+                } catch (error) { console.error("Failed to load global stats:", error); }
             }
-            
-            formSelector.innerHTML = '<option value="">-- Choose a Form --</option>';
-            forms.forEach(f => formSelector.innerHTML += `<option value="${f.id}">${f.title}</option>`);
 
-            // 2. Handle Selection
+            // 2. Load Published Forms into Dropdown
+            const { data: forms, error } = await supabase.from('forms').select('id, title, schema').eq('status', 'PUBLISHED').order('created_at', { ascending: false });
+            formSelector.innerHTML = '<option value="">Global Overview</option>';
+            if (!error) forms.forEach(f => formSelector.innerHTML += `<option value="${f.id}">${f.title}</option>`);
+
+            // 3. Handle View Switching
             formSelector.addEventListener('change', async (e) => {
                 const formId = e.target.value;
                 if (!formId) {
-                    chartContainer.innerHTML = '';
-                    timeSeriesCard.style.display = 'none';
-                    metricsBar.innerHTML = '<div class="metric-card"><div class="metric-val">-</div><div class="metric-label">Total Submissions</div></div>';
+                    globalDashboard.style.display = 'block';
+                    formDashboard.style.display = 'none';
+                    resetGlobalBtn.style.display = 'none';
                     return;
                 }
+                resetGlobalBtn.style.display = 'inline-block';
+                globalDashboard.style.display = 'none';
+                formDashboard.style.display = 'block';
                 const selectedForm = forms.find(f => f.id === formId);
-                await generateAnalytics(selectedForm);
+                document.getElementById('specificFormTitle').textContent = `Metrics: ${selectedForm.title}`;
+                await generateFormAnalytics(selectedForm);
             });
 
-            async function generateAnalytics(form) {
-                chartInstances.forEach(c => c.destroy()); chartInstances = [];
-                chartContainer.innerHTML = ''; timeSeriesCard.style.display = 'none';
+            resetGlobalBtn.addEventListener('click', () => { formSelector.value = ""; formSelector.dispatchEvent(new Event('change')); });
+
+            // 4. Generate Form-Specific Analytics
+            async function generateFormAnalytics(form) {
+                formChartInstances.forEach(c => c.destroy()); formChartInstances = [];
+                chartContainer.innerHTML = ''; 
                 
                 const { data: responses, error } = await supabase.from('responses').select('data, submitted_at, status').eq('form_id', form.id);
                 if (error) return alert("Failed to fetch analytics data.");
 
-                // --- 1. Compute Global Metrics ---
-                let totalScoreSum = 0;
-                let scoredResponsesCount = 0;
-                let totalRevenue = 0;
-                let paymentCurrency = 'USD';
+                // Top Metrics Calculation
+                let totalScoreSum = 0; let scoredResponsesCount = 0; let totalRevenue = 0; let paymentCurrency = 'USD';
+                const statusCounts = {};
 
                 responses.forEach(r => {
-                    if (r.data['_total_score'] !== undefined) {
-                        totalScoreSum += parseFloat(r.data['_total_score']);
-                        scoredResponsesCount++;
-                    }
+                    if (r.data['_total_score'] !== undefined) { totalScoreSum += parseFloat(r.data['_total_score']); scoredResponsesCount++; }
+                    statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
                 });
 
                 const paymentField = form.schema.fields.find(f => f.type === 'payment');
-                if (paymentField) {
-                    paymentCurrency = paymentField.currency || 'USD';
-                    totalRevenue = responses.length * (paymentField.amount || 0); // Simplified calculation based on form entries
-                }
+                if (paymentField) { paymentCurrency = paymentField.currency || 'USD'; totalRevenue = responses.length * (paymentField.amount || 0); }
 
-                let metricsHtml = `<div class="metric-card"><div class="metric-val">${responses.length}</div><div class="metric-label">Total Submissions</div></div>`;
-                if (scoredResponsesCount > 0) {
-                    const avgScore = (totalScoreSum / scoredResponsesCount).toFixed(1);
-                    metricsHtml += `<div class="metric-card"><div class="metric-val">${avgScore}</div><div class="metric-label">Average Quiz Score</div></div>`;
-                }
-                if (paymentField) {
-                    metricsHtml += `<div class="metric-card"><div class="metric-val">${totalRevenue.toLocaleString()} ${paymentCurrency}</div><div class="metric-label">Estimated Revenue</div></div>`;
-                }
+                let metricsHtml = `<div class="metric-card"><div class="metric-icon" style="background:#EFF6FF; color:#3B82F6;"><i data-lucide="inbox"></i></div><div class="metric-info"><div class="metric-val">${responses.length}</div><div class="metric-label">Submissions</div></div></div>`;
+                if (scoredResponsesCount > 0) { metricsHtml += `<div class="metric-card"><div class="metric-icon" style="background:#F0FDF4; color:#10B981;"><i data-lucide="graduation-cap"></i></div><div class="metric-info"><div class="metric-val">${(totalScoreSum / scoredResponsesCount).toFixed(1)}</div><div class="metric-label">Average Score</div></div></div>`; }
+                if (paymentField) { metricsHtml += `<div class="metric-card"><div class="metric-icon" style="background:#FEFCE8; color:#EAB308;"><i data-lucide="dollar-sign"></i></div><div class="metric-info"><div class="metric-val">${totalRevenue.toLocaleString()} ${paymentCurrency}</div><div class="metric-label">Est. Revenue</div></div></div>`; }
                 metricsBar.innerHTML = metricsHtml;
+                lucide.createIcons();
 
                 if (responses.length === 0) {
-                    chartContainer.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px;">No response data available for this form yet.</div>';
+                    chartContainer.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">No response data available for this form yet.</div>';
                     return;
                 }
 
-                // --- 2. Time Series Chart ---
+                // Form Status Chart
+                const ctxFormStatus = document.getElementById('chart_form_status').getContext('2d');
+                formChartInstances.push(new Chart(ctxFormStatus, {
+                    type: 'pie',
+                    data: { labels: Object.keys(statusCounts).map(s => s.replace('_', ' ')), datasets: [{ data: Object.values(statusCounts), backgroundColor: Object.keys(statusCounts).map(s => statusColors[s] || colorPalette[0]), borderWidth: 1 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                }));
+
+                // Form Time Series
                 const dateCounts = {};
                 responses.forEach(r => {
                     const date = new Date(r.submitted_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                     dateCounts[date] = (dateCounts[date] || 0) + 1;
                 });
-                
-                timeSeriesCard.style.display = 'flex';
                 const ctxTime = document.getElementById('chart_timeseries').getContext('2d');
-                chartInstances.push(new Chart(ctxTime, {
-                    type: 'line',
-                    data: {
-                        labels: Object.keys(dateCounts),
-                        datasets: [{
-                            label: 'Submissions',
-                            data: Object.values(dateCounts),
-                            borderColor: colorPalette[0],
-                            backgroundColor: colorPalette[0] + '20',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointBackgroundColor: '#fff',
-                            pointBorderColor: colorPalette[0],
-                            pointBorderWidth: 2,
-                            pointRadius: 4
-                        }]
-                    },
+                formChartInstances.push(new Chart(ctxTime, {
+                    type: 'bar',
+                    data: { labels: Object.keys(dateCounts), datasets: [{ label: 'Submissions', data: Object.values(dateCounts), backgroundColor: colorPalette[1], borderRadius: 4 }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
                 }));
 
-                // --- 3. Field-Level Analytics ---
+                // Field-Level Analytics
                 const analyzableFields = form.schema.fields.filter(f => ['select', 'radio', 'checkbox', 'matrix', 'rank'].includes(f.type));
-
                 analyzableFields.forEach(field => {
-                    const card = document.createElement('div');
-                    card.className = 'chart-card';
+                    const card = document.createElement('div'); card.className = 'chart-card';
                     card.innerHTML = `<div class="chart-title">${field.label}</div><div class="chart-desc">${field.type.toUpperCase()}</div><div class="chart-canvas-wrapper"><canvas id="chart_${field.id}"></canvas></div>`;
                     chartContainer.appendChild(card);
                     
@@ -229,127 +284,32 @@
                     let newChart;
 
                     if (['select', 'radio', 'checkbox'].includes(field.type)) {
-                        const counts = {};
-                        (field.options || []).forEach(opt => counts[opt] = 0);
-                        
-                        responses.forEach(r => {
-                            const answer = r.data[field.id];
-                            if (!answer) return;
-                            if (Array.isArray(answer)) { answer.forEach(a => { if (counts[a] !== undefined) counts[a]++; }); } 
-                            else { if (counts[answer] !== undefined) counts[answer]++; }
-                        });
-
-                        newChart = new Chart(ctx, {
-                            type: field.type === 'checkbox' ? 'bar' : 'doughnut',
-                            data: {
-                                labels: Object.keys(counts),
-                                datasets: [{
-                                    label: 'Votes', data: Object.values(counts),
-                                    backgroundColor: field.type === 'checkbox' ? colorPalette[0] : colorPalette,
-                                    borderWidth: 1
-                                }]
-                            },
-                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: field.type === 'checkbox' ? 'none' : 'right' } } }
-                        });
-                    } 
-                    
-                    else if (field.type === 'matrix') {
-                        // Grouped Bar Chart
-                        const datasets = field.columns.map((col, i) => ({
-                            label: col,
-                            backgroundColor: colorPalette[i % colorPalette.length],
-                            data: field.rows.map(() => 0) // Initialize with 0s
-                        }));
-
-                        responses.forEach(r => {
-                            const answerObj = r.data[field.id];
-                            if (answerObj && typeof answerObj === 'object') {
-                                field.rows.forEach((row, rowIndex) => {
-                                    const selectedCol = answerObj[row];
-                                    const colIndex = field.columns.indexOf(selectedCol);
-                                    if (colIndex > -1) datasets[colIndex].data[rowIndex]++;
-                                });
-                            }
-                        });
-
-                        newChart = new Chart(ctx, {
-                            type: 'bar',
-                            data: { labels: field.rows, datasets: datasets },
-                            options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { precision: 0 } } } }
-                        });
+                        const counts = {}; (field.options || []).forEach(opt => counts[opt] = 0);
+                        responses.forEach(r => { const answer = r.data[field.id]; if (!answer) return; if (Array.isArray(answer)) { answer.forEach(a => { if (counts[a] !== undefined) counts[a]++; }); } else { if (counts[answer] !== undefined) counts[answer]++; } });
+                        newChart = new Chart(ctx, { type: field.type === 'checkbox' ? 'bar' : 'doughnut', data: { labels: Object.keys(counts), datasets: [{ label: 'Votes', data: Object.values(counts), backgroundColor: field.type === 'checkbox' ? colorPalette[0] : colorPalette, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: field.type === 'checkbox' ? 'none' : 'right' } } } });
+                    } else if (field.type === 'matrix') {
+                        const datasets = field.columns.map((col, i) => ({ label: col, backgroundColor: colorPalette[i % colorPalette.length], data: field.rows.map(() => 0) }));
+                        responses.forEach(r => { const ans = r.data[field.id]; if (ans && typeof ans === 'object') { field.rows.forEach((row, rowIndex) => { const colIndex = field.columns.indexOf(ans[row]); if (colIndex > -1) datasets[colIndex].data[rowIndex]++; }); } });
+                        newChart = new Chart(ctx, { type: 'bar', data: { labels: field.rows, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+                    } else if (field.type === 'rank') {
+                        const rankSums = {}; const rankCounts = {}; (field.options || []).forEach(opt => { rankSums[opt] = 0; rankCounts[opt] = 0; });
+                        responses.forEach(r => { const ans = r.data[field.id]; if (ans) { ans.split(',').map(s => s.trim()).forEach((opt, index) => { if (rankSums[opt] !== undefined) { rankSums[opt] += (index + 1); rankCounts[opt]++; } }); } });
+                        const avgRanks = Object.keys(rankSums).map(opt => rankCounts[opt] > 0 ? (rankSums[opt] / rankCounts[opt]).toFixed(2) : 0);
+                        const sortedData = Object.keys(rankSums).map((opt, i) => ({ label: opt, avg: avgRanks[i] })).filter(item => item.avg > 0).sort((a, b) => a.avg - b.avg);
+                        newChart = new Chart(ctx, { type: 'bar', data: { labels: sortedData.map(d => d.label), datasets: [{ label: 'Average Position (Lower is Better)', data: sortedData.map(d => d.avg), backgroundColor: colorPalette[1], }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true } } } });
                     }
-                    
-                    else if (field.type === 'rank') {
-                        // Calculate Average Rank Position (1 is best)
-                        const rankSums = {}; const rankCounts = {};
-                        (field.options || []).forEach(opt => { rankSums[opt] = 0; rankCounts[opt] = 0; });
-
-                        responses.forEach(r => {
-                            const answerStr = r.data[field.id];
-                            if (answerStr) {
-                                const orderArr = answerStr.split(',').map(s => s.trim());
-                                orderArr.forEach((opt, index) => {
-                                    if (rankSums[opt] !== undefined) {
-                                        rankSums[opt] += (index + 1); // 1st place = 1, 2nd place = 2...
-                                        rankCounts[opt]++;
-                                    }
-                                });
-                            }
-                        });
-
-                        const avgRanks = Object.keys(rankSums).map(opt => {
-                            return rankCounts[opt] > 0 ? (rankSums[opt] / rankCounts[opt]).toFixed(2) : 0;
-                        });
-
-                        // Sort by best average rank (lowest number is better)
-                        const sortedData = Object.keys(rankSums).map((opt, i) => ({ label: opt, avg: avgRanks[i] }))
-                                            .filter(item => item.avg > 0)
-                                            .sort((a, b) => a.avg - b.avg);
-
-                        newChart = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: sortedData.map(d => d.label),
-                                datasets: [{
-                                    label: 'Average Position (Lower is Better)',
-                                    data: sortedData.map(d => d.avg),
-                                    backgroundColor: colorPalette[1],
-                                }]
-                            },
-                            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true } }, plugins: { tooltip: { callbacks: { label: (ctx) => `Avg Position: ${ctx.raw}` } } } }
-                        });
-                    }
-
-                    if (newChart) chartInstances.push(newChart);
+                    if (newChart) formChartInstances.push(newChart);
                 });
             }
+
+            // Mobile sidebar logic
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn'); const sidebar = document.querySelector('.sidebar');
+            if (mobileMenuBtn && sidebar) { mobileMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); sidebar.classList.toggle('active'); }); document.addEventListener('click', (e) => { if (window.innerWidth <= 768 && sidebar.classList.contains('active')) { if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) { sidebar.classList.remove('active'); } } }); }
+            document.getElementById('logoutBtn')?.addEventListener('click', async (e) => { e.preventDefault(); await supabase.auth.signOut(); window.location.href = 'index.html'; });
+
+            // Run initial load
+            initGlobalAnalytics();
         });
-
-// Mobile Sidebar Toggle Logic
-const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-const sidebar = document.querySelector('.sidebar');
-
-if (mobileMenuBtn && sidebar) {
-    mobileMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sidebar.classList.toggle('active');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
-            if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
-        }
-    });
-}
-
-document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    await supabase.auth.signOut();
-    window.location.href = 'index.html'; // Redirect to your login page
-});
-
     </script>
 </body>
 </html>
